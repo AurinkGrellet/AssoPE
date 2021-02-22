@@ -9,9 +9,7 @@ export interface Adherent {
     email: string
 }
 
-var Schema = mongoose.Schema;
-
-var AdherentSchema: mongoose.Schema = new Schema(
+var AdherentSchema: mongoose.Schema = new mongoose.Schema(
     {
         nom: { type: String, require: true, maxlength: 100 },
         prenom: { type: String, require: true, maxlength: 100 },

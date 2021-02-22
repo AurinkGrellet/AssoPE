@@ -7,12 +7,11 @@ export async function control(PASSW: string) {
  * Setting up the only connection
  */
 var conn: mongoose.Connection = await checkConnDatabase(PASSW);
-
+    
 // Mongoose SELECT exemple avec .find
 var collection: Collection = conn.db.collection("adherents");
-var e = collection.find({"prenom":"prenom2"});
-console.log(collection)
-//console.log(await e.toArray());
+var e = collection.find();
+console.log(await e.toArray());
 
 return conn;
 
