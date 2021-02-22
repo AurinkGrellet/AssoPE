@@ -1,0 +1,16 @@
+#tests {
+    margin-top: 26px;
+}
+
+oj-module[role=main] button {
+    background-color: red !important;
+}
+
+.crud-grid-tests {
+    height: 400px;
+    max-width: 500px;
+}
+
+.crud-table-demo-hidden {
+    display: none;
+}

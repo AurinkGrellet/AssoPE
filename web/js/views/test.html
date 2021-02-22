@@ -1,0 +1,47 @@
+<!--
+ Copyright (c) 2014, 2021, Oracle and/or its affiliates.
+ Licensed under The Universal Permissive License (UPL), Version 1.0
+ as shown at https://oss.oracle.com/licenses/upl/
+ -->
+<link rel="stylesheet" href="../../css/tests.css" type="text/css" />
+
+<div class="oj-hybrid-padding">
+    <h1>Test area</h1>
+    <div id="ogms-test-intro">
+        My testing playground for visual elements.
+    </div>
+
+    <div id="tests" class="oj-flex">
+        <div class="oj-sm-12 oj-flex-item oj-sm-padding-2x-horizontal">
+            <div id="datagrid-wrapper" class="oj-flex">
+                <div class="oj-sm-12 oj-lg-6 oj-flex-item oj-sm-padding-2x-horizontal">
+                    <oj-data-grid id="datagrid" class="crud-grid-tests" aria-label="Data Grid CRUD Demo" data="[[dataSource]]" selection-mode.row="single" dnd.reorder.row="enable" header.column.style="width:100px" cell.class-name="[[getCellClassName]]">
+                    </oj-data-grid>
+                </div>
+                <oj-form-layout id="form-container" class="oj-sm-padding-2x-top oj-sm-padding-2x-start">
+                    <oj-input-text id="firstNameInput" value="{{inputFirstName}}" label-hint="First Name"></oj-input-text>
+                    <oj-input-text id="lastNameInput" value="{{inputLastName}}" label-hint="Last Name"></oj-input-text>
+                    <oj-input-text id="inputHireDate" value="{{inputHireDate}}" label-hint="Date Hired"></oj-input-text>
+                    <oj-input-text id="inputSalary" value="{{inputSalary}}" label-hint="Salary"></oj-input-text>
+                    <oj-label-value>
+                        <oj-button id="ajout_btn" class="oj-flex-item" on-oj-action="[[ajout]]">
+                            <span slot="startIcon" class="oj-ux-ico-action"></span> AJOUT
+                        </oj-button>
+                        <oj-button id="update_btn" class="oj-flex-item" on-oj-action="[[update]]">
+                            <span slot="startIcon" class="oj-ux-ico-information"></span> UPDATE
+                        </oj-button>
+                        <!--
+                <oj-input-text value="testD" label-hint="test textuel"></oj-input-text>
+            -->
+                        <oj-button id="remove_btn" class="oj-flex-item" on-oj-action="[[remove]]">
+                            <span slot="startIcon" class="oj-ux-ico-delete-circle"></span> DELETE
+                        </oj-button>
+                        <oj-button id="remove_btn" class="oj-flex-item" on-oj-action="[[reset]]">
+                            <span slot="startIcon" class="oj-ux-ico-back"></span> RESET (SELECT)
+                        </oj-button>
+                    </oj-label-value>
+                </oj-form-layout>
+            </div>
+        </div>
+    </div>
+</div>

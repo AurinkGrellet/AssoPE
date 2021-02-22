@@ -1,0 +1,7 @@
+.idea/
+.vscode/
+node_modules/
+src/oracledbAPI/.env
+build/
+tmp/
+temp/

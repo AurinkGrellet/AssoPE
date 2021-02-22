@@ -1,0 +1,41 @@
+/*
+    Document   : override
+    Created on : <date>
+    Author     : <author>
+    Description:
+        This is where any of your application specific styles should be included
+*/
+
+.sendOffScreen {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+@media (prefers-color-scheme: light) {
+    div #pageContent *,
+    div #pageContent {
+        background: white;
+        color: black;
+    }
+    .oj-web-applayout-footer-item {
+        color: black !important;
+    }
+}
+
+
+/*
+@media (prefers-color-scheme: dark) {
+    div #pageContent *,
+    div #pageContent {
+        background: black;
+        color: lightgray;
+    }
+    .oj-web-applayout-footer-item {
+        color: lightgray !important;
+    }
+}
+*/
