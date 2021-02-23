@@ -1,12 +1,14 @@
-import { NOMEM } from "dns";
 import mongoose from "mongoose";
 
-export interface Adherent {
-    id: number,
+export interface BaseAdherent {
     nom: string,
     prenom: string,
     adresse: string,
     email: string
+}
+
+export interface Adherent extends BaseAdherent {
+    id: number
 }
 
 var AdherentSchema: mongoose.Schema = new mongoose.Schema(
@@ -26,15 +28,3 @@ AdherentSchema
 });
 
 export var modelAdherent = mongoose.model("Adherent", AdherentSchema);
-
-/*
-export interface BaseAdherent {
-    nom: string,
-    prenom: string,
-    email: string,
-    adresse: string
-}
-
-export interface Adherent extends BaseAdherent {
-    id: number;
-}*/

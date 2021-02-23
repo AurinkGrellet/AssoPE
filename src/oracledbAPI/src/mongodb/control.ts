@@ -6,12 +6,18 @@ export async function control(PASSW: string) {
 /**
  * Setting up the only connection
  */
-var conn: mongoose.Connection = await checkConnDatabase(PASSW);
+var conn: mongoose.Connection;
+if (mongoose.connection.readyState != 1) {
+    conn = await checkConnDatabase(PASSW);
+}
+else conn = mongoose.connection;
     
-// Mongoose SELECT exemple avec .find
+// Mongoose exemple SELECT avec .find
+/*
 var collection: Collection = conn.db.collection("adherents");
 var e = collection.find();
 console.log(await e.toArray());
+*/
 
 return conn;
 
