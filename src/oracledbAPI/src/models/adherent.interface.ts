@@ -8,7 +8,7 @@ export interface BaseAdherent {
 }
 
 export interface Adherent extends BaseAdherent {
-    id: number
+    _id: number
 }
 
 var AdherentSchema: mongoose.Schema = new mongoose.Schema(
@@ -19,12 +19,5 @@ var AdherentSchema: mongoose.Schema = new mongoose.Schema(
         email: { type: String, maxlength: 100 }
     }
 );
-
-// Virtual pour le nom complet de l'adherent
-AdherentSchema
-.virtual('nomComplet')
-.get(function () {
-    return this.nom + ', ' + this.prenom;
-});
 
 export var modelAdherent = mongoose.model("Adherent", AdherentSchema);

@@ -1,86 +1,103 @@
 /**
  * Data Model Interfaces
  */
+
 import mongoose from "mongoose";
-import { control } from "../mongodb/control";
+import { connectMongo } from "../mongodb/connectMongo";
 import { BaseAdherent, Adherent, modelAdherent } from "../models/adherent.interface";
 import { Adherents } from "../models/adherents.interface";
 
 /**
  * DataBase Store
  */
+
+var adherents: Adherents;
 var connection: mongoose.Connection = mongoose.connection;
 if (connection.readyState != 1 && connection.readyState != 2) async () => {
-    connection = await control(process.env.PASSW as string);
+    connection = await connectMongo(process.env.PASSW as string);
 }
 
-if (connection.readyState == 1) {
-    var coll = modelAdherent.db.collection("adherents");
-}
 
 /**
- * In-Memory Store
+ * DataBase Interactions
  */
-let adherents: Adherents = {
-    1: {
-        id: 1,
-        nom: "nom1",
-        prenom: "prenom1",
-        email: "nom1p1@gmail.com",
-        adresse: "12 Place des Oliviers - 01100 Paris"
-    },
-    2: {
-        id: 2,
-        nom: "nom2",
-        prenom: "prenom2",
-        email: "nom2p2@gmail.com",
-        adresse: "13 Place des Oliviers - 01100 Paris"
-    }
+
+var coll: mongoose.Collection = modelAdherent.db.collection("adherents");
+async function getAllAdherents() {
+    adherents = await coll.find().toArray() as Adherents;
 }
+
+async function addAdherent(adherent: BaseAdherent) {
+    await coll.insertOne(adherent);
+}
+
+async function removeAdherent(_id: number) {
+    const adherent = adherents[_id];
+    coll.deleteOne({_id: adherent._id}, function (err) {
+        if (err) console.log(err);
+    });
+}
+
 
 /**
  * Service Methods
  */
-export const findAll = async (): Promise<Adherent[]> => Object.values(adherents);
 
-export const find = async (id: number): Promise<Adherent> => adherents[id];
+export const findAll = async (): Promise<Adherent[]> => {
+    await getAllAdherents();
+    return Object.values(adherents);
+}
 
-export const create = async (newAdherent: BaseAdherent): Promise<Adherent> => {
-    const id = new Date().valueOf();
-    adherents[id] = {
-        id,
-        ...newAdherent,
-    };
-
+export const find = async (id: number): Promise<Adherent> => {
+    await getAllAdherents();
     return adherents[id];
 }
 
+export const create = async (newAdherent: BaseAdherent): Promise<Adherent> => {
+    await getAllAdherents();
+
+    // ajout de l'adhérent à la collection
+    const _id = (adherents as Adherent[]).length;
+    adherents[_id] = {
+        _id,
+        ...newAdherent,
+    };
+
+    // ajout de l'adhérent à la base de données
+    await addAdherent(newAdherent);
+
+    return adherents[_id];
+}
+
 export const update = async (
-    id: number,
+    _id: number,
     adherentUpdate: BaseAdherent
 ): Promise<Adherent | null> => {
-    const adherent = await find(id);
+    await getAllAdherents();
+
+    const adherent = await find(_id);
 
     if (!adherent) {
         return null;
     }
 
-    adherents[id] = { id, ...adherentUpdate };
+    adherents[_id] = { _id, ...adherentUpdate };
 
-    return adherents[id];
+    return adherents[_id];
 }
 
-export const remove = async (id: number): Promise<null | void> => {
-    const adherent = await find(id);
+export const remove = async (_id: number): Promise<null | void> => {
+    await getAllAdherents();
+    
+    const adherent = await find(_id);
 
     if (!adherent) {
         return null;
     }
 
     else {
-        delete adherents[id];
+        await removeAdherent(_id);
+
+        delete adherents[_id];
     }
 }
-
-
-// adapter le code à la base de données au lieu du stockage mémoire

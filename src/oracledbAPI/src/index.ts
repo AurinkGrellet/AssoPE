@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import * as dbaccess from "./mongodb/control";
+import * as dbaccess from "./mongodb/connectMongo";
 import { adherentsRouter } from "./models/adherents.router";
 
 dotenv.config();
@@ -36,5 +36,5 @@ app.use("/api/menu/adherents", adherentsRouter);
  */
 app.listen(PORT, async () => {
     console.log(`Listening on port ${PORT}`);
-    await dbaccess.control(PASSW); // crée un objet "connection"
+    await dbaccess.connectMongo(PASSW); // crée un objet "connection"
 });

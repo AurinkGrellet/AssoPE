@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 import { checkConnDatabase } from "./checkConnection";
-import { Collection } from "mongodb";
 
-export async function control(PASSW: string) {
+export async function connectMongo(PASSW: string) {
 /**
  * Setting up the only connection
  */
