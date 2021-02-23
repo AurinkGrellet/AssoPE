@@ -8,7 +8,7 @@ export interface BaseAdherent {
 }
 
 export interface Adherent extends BaseAdherent {
-    _id: number
+    _id: number | string
 }
 
 var AdherentSchema: mongoose.Schema = new mongoose.Schema(
