@@ -19,6 +19,8 @@ if (!process.env.PORT) {
 
 const PORT: number = parseInt(process.env.PORT as string, 10);
 const PASSW: string = process.env.PASSW as string;
+const USER: string = process.env.USER as string;
+const DATABASE: string = process.env.DATABASE as string;
 
 const app = express();
 
@@ -36,5 +38,5 @@ app.use("/api/menu/adherents", adherentsRouter);
  */
 app.listen(PORT, async () => {
     console.log(`Listening on port ${PORT}`);
-    await dbaccess.connectMongo(PASSW); // crée un objet "connection"
+    await dbaccess.connectMongo(USER, PASSW, DATABASE); // crée un objet "connection"
 });

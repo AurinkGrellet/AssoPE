@@ -14,7 +14,7 @@ import { Adherents } from "../models/adherents.interface";
 var adherents: Adherents;
 var connection: mongoose.Connection = mongoose.connection;
 if (connection.readyState != 1 && connection.readyState != 2) async () => {
-    connection = await connectMongo(process.env.PASSW as string);
+    connection = await connectMongo(process.env.USER as string, process.env.PASSW as string, process.env.DATABASE as string);
 }
 
 
@@ -31,9 +31,20 @@ async function addAdherent(adherent: BaseAdherent) {
     await coll.insertOne(adherent);
 }
 
-async function removeAdherent(_id: number) {
-    const adherent = adherents[_id];
-    coll.deleteOne({_id: adherent._id}, function (err) {
+async function updateAdherent(_id: string | number, adherent: Adherent) {
+    console.log(_id);
+    await coll.updateOne({ _id: _id }, {
+        $set: {
+            nom: adherent.nom,
+            prenom: adherent.prenom,
+            adresse: adherent.adresse,
+            email: adherent.email
+        }
+    });
+}
+
+async function removeAdherent(adherent: Adherent) {
+    coll.deleteOne({ _id: adherent._id }, function (err) {
         if (err) console.log(err);
     });
 }
@@ -81,14 +92,18 @@ export const update = async (
         return null;
     }
 
-    adherents[_id] = { _id, ...adherentUpdate };
+    else {
+        adherents[_id] = { _id, ...adherentUpdate };
 
-    return adherents[_id];
+        updateAdherent(adherent._id, adherents[_id]);
+
+        return adherents[_id];
+    }
 }
 
 export const remove = async (_id: number): Promise<null | void> => {
     await getAllAdherents();
-    
+
     const adherent = await find(_id);
 
     if (!adherent) {
@@ -96,7 +111,7 @@ export const remove = async (_id: number): Promise<null | void> => {
     }
 
     else {
-        await removeAdherent(_id);
+        removeAdherent(adherent);
 
         delete adherents[_id];
     }
