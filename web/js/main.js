@@ -11,39 +11,35 @@
  * Example of Require.js boostrap javascript
  */
 
- // The UserAgent is used to detect IE11. Only IE11 requires ES5.
-(function () {
-  
-  function _ojIsIE11() {
-    var nAgt = navigator.userAgent;
-    return nAgt.indexOf('MSIE') !== -1 || !!nAgt.match(/Trident.*rv:11./);
-  };
-  var _ojNeedsES5 = _ojIsIE11();
+// The UserAgent is used to detect IE11. Only IE11 requires ES5.
+(function() {
 
-  requirejs.config(
-    {
-      baseUrl: 'js',
+    function _ojIsIE11() {
+        var nAgt = navigator.userAgent;
+        return nAgt.indexOf('MSIE') !== -1 || !!nAgt.match(/Trident.*rv:11./);
+    };
+    var _ojNeedsES5 = _ojIsIE11();
 
-      paths:
-      /* DO NOT MODIFY
-      ** All paths are dynamicaly generated from the path_mappings.json file.
-      ** Add any new library dependencies in path_mappings json file
-      */
+    requirejs.config({
+        baseUrl: 'js',
+
+        paths:
+        /* DO NOT MODIFY
+         ** All paths are dynamicaly generated from the path_mappings.json file.
+         ** Add any new library dependencies in path_mappings json file
+         */
 // injector:mainReleasePaths
 
 {
   "knockout":"libs/knockout/knockout-3.5.1.debug",
   "jquery":"libs/jquery/jquery-3.5.1",
+  "querystring":"libs/qs/qs",
   "mongodb":"libs/mongodb/mongodb",
   "mock-rest-server":"libs/mock-rest-server/MockRestServer",
   "mockjax":"libs/mock-rest-server/MockRestServer",
   "jqueryui-amd":"libs/jquery/jqueryui-amd-1.12.1",
   "mongodb-libs":"libs/mongodb/lib",
   "res_adherent":"views/adherentData.json",
-  "typeorm":"libs/typeorm/index",
-  "typeorm-libs":"libs/typeorm/index",
-  "mysql":"libs/mysql/index",
-  "mysql-libs":"libs/mysql/lib/index",
   "promise":"libs/es6-promise/es6-promise",
   "hammerjs":"libs/hammer/hammer-2.0.8",
   "ojdnd":"libs/dnd-polyfill/dnd-polyfill-1.0.2",
@@ -65,13 +61,12 @@
 }
 
 // endinjector
-    }
-  );
+    });
 }());
 
-require(['ojs/ojbootstrap', 'root'], function (Bootstrap, Root) {
-  // this callback gets executed when all required modules are loaded
-  Bootstrap.whenDocumentReady().then(function(){
-    Root.init();
-  });
+require(['ojs/ojbootstrap', 'root'], function(Bootstrap, Root) {
+    // this callback gets executed when all required modules are loaded
+    Bootstrap.whenDocumentReady().then(function() {
+        Root.init();
+    });
 });

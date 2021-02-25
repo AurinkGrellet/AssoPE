@@ -21,6 +21,7 @@
 // GET items
 
 adherentsRouter.get("/", async (req: Request, res: Response) => {
+    console.log("GET received");
     try {
         const adherents: Adherent[] = await AdherentService.findAll();
 
@@ -34,6 +35,7 @@ adherentsRouter.get("/", async (req: Request, res: Response) => {
 // GET items/:id
 
 adherentsRouter.get("/:id", async (req: Request, res: Response) => {
+    console.log("GET received");
     const id: number = parseInt(req.params.id, 10);
 
     try {

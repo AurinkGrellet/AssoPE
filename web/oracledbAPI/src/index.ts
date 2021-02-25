@@ -7,6 +7,8 @@ import cors from "cors";
 import helmet from "helmet";
 import * as dbaccess from "./mongodb/connectMongo";
 import { adherentsRouter } from "./models/adherents.router";
+import { errorHandler } from "./middleware/error.middleware";
+import { notFoundHandler } from "./middleware/not-found.middleware";
 
 dotenv.config();
 
@@ -31,6 +33,9 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use("/api/menu/adherents", adherentsRouter);
+
+app.use(errorHandler);
+app.use(notFoundHandler); // catches all errors uncatched by the errorHandler
 
 
 /**

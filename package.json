@@ -4,14 +4,16 @@
     "description": "An Oracle JavaScript Extension Toolkit(JET) web app",
     "dependencies": {
         "@oracle/oraclejet": "~10.0.0",
+        "https": "^1.0.0",
         "mongodb": "^3.6.4",
-        "mysql": "^2.14.1",
+        "querystring": "^0.2.1",
         "reflect-metadata": "^0.1.10",
-        "typeorm": "0.2.31"
+        "request": "^2.88.2"
     },
     "devDependencies": {
         "@oracle/oraclejet-tooling": "~10.0.0",
         "@types/encodeurl": "^1.0.0",
+        "@types/jquery": "^3.5.5",
         "@types/mongodb": "^3.6.6",
         "@types/mysql": "^2.15.17",
         "@types/node": "^8.0.29",
@@ -22,7 +24,5 @@
         "node": ">=10.13.0"
     },
     "private": true,
-    "scripts": {
-        "start": "ts-node src/index.ts"
-    }
+    "scripts": {}
 }

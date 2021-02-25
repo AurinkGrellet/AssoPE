@@ -15,7 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i18n", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider", "ojs/ojcollectiondatagriddatasource"], function (require, exports, AccUtils, ko, ConverterUtils, ojmodel_1, CollectionDataProvider) {
+define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i18n", "../callApi", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider", "ojs/ojcollectiondatagriddatasource"], function (require, exports, AccUtils, ko, ConverterUtils, callApi_1, ojmodel_1, CollectionDataProvider) {
     "use strict";
     /**
      * ViewModel Test
@@ -178,6 +178,13 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i
                 }
             }.bind(this));
             this.grid = document.getElementById("datagrid");
+            /**
+             * Call to API
+             */
+            var res = callApi_1.default("/api/menu/adherents/", "GET", "");
+            res.then((value) => {
+                console.log(value[4].adresse);
+            });
         }
         disconnected() {
         }

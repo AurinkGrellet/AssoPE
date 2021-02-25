@@ -43,6 +43,21 @@
             }
         },
 
+        "querystring": {
+            "cdn": "3rdparty",
+            "cwd": "node_modules/qs/dist",
+            "debug": {
+                "src": "qs.js",
+                "path": "libs/qs/qs.js",
+                "cdnPath": ""
+            },
+            "release": {
+                "src": "qs.js",
+                "path": "libs/qs/qs.js",
+                "cdnPath": ""
+            }
+        },
+
         "mongodb": {
             "cdn": "3rdparty",
             "cwd": "node_modules/mongodb",
@@ -134,66 +149,6 @@
             "release": {
                 "src": "adherentData.json",
                 "path": "views/adherentData.json",
-                "cdnPath": ""
-            }
-        },
-
-        "typeorm": {
-            "cdn": "3rdparty",
-            "cwd": "node_modules/typeorm",
-            "debug": {
-                "src": "index.js",
-                "path": "libs/typeorm/index.js",
-                "cdnPath": ""
-            },
-            "release": {
-                "src": "index.js",
-                "path": "libs/typeorm/index.js",
-                "cdnPath": ""
-            }
-        },
-
-        "typeorm-libs": {
-            "cdn": "3rdparty",
-            "cwd": "node_modules/typeorm/",
-            "debug": {
-                "src": ["browser/*.js", "cache/*.js", "commands/*.js", "common/*.js", "connection/*.js", "decorator/*.js", "driver/*.js"],
-                "path": "libs/typeorm/index.js",
-                "cdnPath": ""
-            },
-            "release": {
-                "src": ["browser/*.js", "cache/*.js", "commands/*.js", "common/*.js", "connection/*.js", "decorator/*.js", "driver/*.js"],
-                "path": "libs/typeorm/index.js",
-                "cdnPath": ""
-            }
-        },
-
-        "mysql": {
-            "cdn": "3rdparty",
-            "cwd": "node_modules/mysql",
-            "debug": {
-                "src": "index.js",
-                "path": "libs/mysql/index.js",
-                "cdnPath": ""
-            },
-            "release": {
-                "src": "index.js",
-                "path": "libs/mysql/index.js",
-                "cdnPath": ""
-            }
-        },
-
-        "mysql-libs": {
-            "cdn": "3rdparty",
-            "cwd": "node_modules/mysql/lib/",
-            "debug": {
-                "src": ["**/**"],
-                "path": "libs/mysql/lib/index.js",
-                "cdnPath": ""
-            },
-            "release": {
-                "src": ["**/**"],
-                "path": "libs/mysql/lib/",
                 "cdnPath": ""
             }
         },

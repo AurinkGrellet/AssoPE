@@ -24,6 +24,7 @@
 import * as AccUtils from "../accUtils";
 import * as ko from "knockout";
 import * as ConverterUtils from "ojs/ojconverterutils-i18n";
+import callApi, { Adherents } from "../callApi";
 import "ojs/ojknockout";
 import "ojs/ojinputtext";
 import "ojs/ojbutton";
@@ -39,28 +40,6 @@ import { Model, Collection } from "ojs/ojmodel";
 import CollectionDataProvider = require("ojs/ojcollectiondataprovider");
 import { ojDialog } from "ojs/ojdialog";
 
-
-/**
- * Interface de la base de données
- */
-interface Adherents {
-    id: number;
-    prenom: string;
-    nom: string;
-    adresse: string;
-    mail: string;
-}
-
-interface Dep {
-    id: number,
-    prenom: string,
-    nom: string,
-    mail: string,
-    tel: string,
-    date: Date,
-    salaire: number,
-    depId: number
-}
 
 /**
  * ViewModel Test
@@ -192,9 +171,10 @@ class TestViewModel {
             success: (model, response) => { },
             error: (jqXHR, textStatus, errorThrown) => { },
         });
+
         // !!! add recordAttrs to database
     };
-    
+
     private DeptCol: ko.Observable = ko.observable();
     datasource: ko.Observable = ko.observable();
     private parseSaveDept = (response: {
@@ -260,6 +240,14 @@ class TestViewModel {
             }
         }.bind(this));
         this.grid = document.getElementById("datagrid") as ojDataGrid<number, string>
+
+        /**
+         * Call to API
+         */
+        var res = callApi("/api/menu/adherents/", "GET", "");
+        res.then((value) => {
+            // "value" contient le résultat de la requête
+        })
     }
 
     disconnected(): void {
