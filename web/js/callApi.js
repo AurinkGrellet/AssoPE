@@ -14,6 +14,7 @@ define(["require", "exports"], function (require, exports) {
      * Variables
      */
     const BASE_URL = "http://localhost:7000";
+    var res;
     /**
      *
      * @param method POST, GET, PUT, DELETE
@@ -22,41 +23,68 @@ define(["require", "exports"], function (require, exports) {
      */
     function performRequest(url, type, req) {
         return __awaiter(this, void 0, void 0, function* () {
-            // ajoute l'adhérent à récupérer à l'URL
-            if (type == "GET" && req != "") {
-                url += req.toString();
-            }
             /**
              * HTTPS request
              */
             // GET -> SELECT
             if (type == "GET") {
-                var datares;
-                yield $.getJSON(BASE_URL + url, (data) => {
-                    // SELECT * (data est un vecteur)
-                    if (data[0]) {
-                        console.log(data[1].adresse);
-                    }
-                    else {
-                        console.log(data.adresse);
-                    }
-                    datares = data;
+                // ajoute à l'URL l'adhérent à récupérer si besoin
+                if (req != "") {
+                    url += req.toString();
+                }
+                yield $.getJSON(BASE_URL + url, (data, status, xhr) => {
+                    res = {
+                        adherents: data,
+                        statusCode: xhr.status
+                    };
                 });
-                return datares;
+                return res;
             }
-            // POST -> INSERT
-            else if (type == "POST") {
-                // somehow create the request from params & UrlAjaxSettings as a type? => read same url as ^
-                $.post();
-            }
-            // PUT/DELETE -> UPDATE/DELETE
-            else {
+            // POST -> INSERT && PUT -> UPDATE
+            else if (type == "POST" || type == "PUT") {
+                var completeUrl = BASE_URL + url;
+                if (type == "PUT") {
+                    var adherent = {
+                        nom: req.nom,
+                        prenom: req.prenom,
+                        adresse: req.adresse,
+                        email: req.email
+                    };
+                    completeUrl = BASE_URL + url + req._id;
+                    req = adherent; // écrase la requête initiale avec l'adhérent
+                }
                 var options = {
-                    url: BASE_URL + url,
-                    type: type,
-                    success: () => { console.log("SUCCESS"); }
+                    method: type,
+                    url: completeUrl,
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify(req),
+                    traditional: true,
+                    success: function (data, status, xhr) {
+                        res = {
+                            adherents: data,
+                            statusCode: xhr.status
+                        };
+                    }
                 };
-                $.ajax(options);
+                yield $.ajax(options);
+                return res;
+            }
+            // DELETE
+            else if (type == "DELETE") {
+                var completeUrl = BASE_URL + url + req;
+                var options = {
+                    method: "DELETE",
+                    url: completeUrl,
+                    traditional: true,
+                    success: function (data, status, xhr) {
+                        res = {
+                            adherents: null,
+                            statusCode: xhr.status
+                        };
+                    }
+                };
+                yield $.ajax(options);
+                return res;
             }
             return null;
         });

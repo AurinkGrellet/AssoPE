@@ -56,8 +56,9 @@ adherentsRouter.get("/:id", async (req: Request, res: Response) => {
 
 adherentsRouter.post("/", async (req: Request, res: Response) => {
     try {
+        console.log(req.body);
         const adherent: BaseAdherent = req.body;
-
+        
         const newAdherent = await AdherentService.create(adherent);
 
         res.status(201).json(newAdherent);

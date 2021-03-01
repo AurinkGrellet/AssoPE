@@ -15,7 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i18n", "../callApi", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider", "ojs/ojcollectiondatagriddatasource"], function (require, exports, AccUtils, ko, ConverterUtils, callApi_1, ojmodel_1, CollectionDataProvider) {
+define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i18n", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider", "ojs/ojcollectiondatagriddatasource"], function (require, exports, AccUtils, ko, ConverterUtils, ojmodel_1, CollectionDataProvider) {
     "use strict";
     /**
      * ViewModel Test
@@ -181,10 +181,38 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i
             /**
              * Call to API
              */
-            var res = callApi_1.default("/api/menu/adherents/", "GET", "");
-            res.then((value) => {
-                console.log(value[4].adresse);
-            });
+            /*
+            
+                    // GET test (changer "" par un nombre pour récupérer un adhérent précis)
+                    var resGet = callApi("/api/menu/adherents/", "GET", "");
+                    resGet.then((value) => {
+                        console.log(value.adherents[2].adresse);
+                        console.log(value.statusCode);
+                        // "value" contient le résultat de la requête
+                    });
+            
+                    // POST test
+                    var resPost = callApi("/api/menu/adherents/", "POST", {nom: "Dupont", prenom: "Richard", adresse: "238 Rue Kleber - 93000 Toulon", email: "richard.dupont@hotmail.com"});
+                    resPost.then((value) => {
+                        console.log(value.statusCode);
+                        // contient le nouvel adhérent + status
+                    });
+            
+                    // PUT test
+                    var resPut = callApi("/api/menu/adherents/", "PUT", {_id:"5", nom: "Dupont", prenom:"Richard", adresse:"237 Rue Kleber - 93000 Toulon", email:"richard.dupont@hotmail.com"});
+                    resPut.then((value) => {
+                        console.log(value.statusCode);
+                        // contient l'adhérent mis à jour + status
+                    });
+            
+                    // DELETE test
+                    var resDel = callApi("/api/menu/adherents/", "DELETE", "6");
+                    resDel.then((value) => {
+                        console.log(value.statusCode);
+                        // contient le status
+                    });
+            
+            */
         }
         disconnected() {
         }

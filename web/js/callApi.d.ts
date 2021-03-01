@@ -1,9 +1,15 @@
-export interface Adherents {
-    _id: string;
+interface BaseAdherent {
     nom: string;
     prenom: string;
     email: string;
     adresse: string;
+}
+interface Adherents extends BaseAdherent {
+    _id: string;
+}
+export interface webRequest {
+    adherents: Adherents | Adherents[];
+    statusCode: number;
 }
 /**
  *
@@ -11,4 +17,4 @@ export interface Adherents {
  * @param data
  * @param success callback function
  */
-export default function performRequest(url: string, type: string, req: string | Object): Promise<Adherents | Adherents[]>;
+export default function performRequest(url: string, type: string, req: string | BaseAdherent | Adherents): Promise<webRequest>;

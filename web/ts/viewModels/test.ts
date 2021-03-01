@@ -24,7 +24,7 @@
 import * as AccUtils from "../accUtils";
 import * as ko from "knockout";
 import * as ConverterUtils from "ojs/ojconverterutils-i18n";
-import callApi, { Adherents } from "../callApi";
+import callApi from "../callApi";
 import "ojs/ojknockout";
 import "ojs/ojinputtext";
 import "ojs/ojbutton";
@@ -241,13 +241,43 @@ class TestViewModel {
         }.bind(this));
         this.grid = document.getElementById("datagrid") as ojDataGrid<number, string>
 
+        
         /**
          * Call to API
          */
-        var res = callApi("/api/menu/adherents/", "GET", "");
-        res.then((value) => {
+
+/*
+
+        // GET test (changer "" par un nombre pour récupérer un adhérent précis)
+        var resGet = callApi("/api/menu/adherents/", "GET", "");
+        resGet.then((value) => {
+            console.log(value.adherents[2].adresse);
+            console.log(value.statusCode);
             // "value" contient le résultat de la requête
-        })
+        });
+
+        // POST test
+        var resPost = callApi("/api/menu/adherents/", "POST", {nom: "Dupont", prenom: "Richard", adresse: "238 Rue Kleber - 93000 Toulon", email: "richard.dupont@hotmail.com"});
+        resPost.then((value) => {
+            console.log(value.statusCode);
+            // contient le nouvel adhérent + status
+        });
+
+        // PUT test
+        var resPut = callApi("/api/menu/adherents/", "PUT", {_id:"5", nom: "Dupont", prenom:"Richard", adresse:"237 Rue Kleber - 93000 Toulon", email:"richard.dupont@hotmail.com"});
+        resPut.then((value) => {
+            console.log(value.statusCode);
+            // contient l'adhérent mis à jour + status
+        });
+
+        // DELETE test
+        var resDel = callApi("/api/menu/adherents/", "DELETE", "6");
+        resDel.then((value) => {
+            console.log(value.statusCode);
+            // contient le status
+        });
+
+*/
     }
 
     disconnected(): void {

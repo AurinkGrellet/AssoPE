@@ -3,12 +3,22 @@
  */
 const BASE_URL: string = "http://localhost:7000";
 
-export interface Adherents {
-    _id: string,
+var res: webRequest;
+
+interface BaseAdherent {
     nom: string,
     prenom: string,
     email: string,
     adresse: string
+}
+
+interface Adherents extends BaseAdherent {
+    _id: string
+}
+
+export interface webRequest {
+    adherents: Adherents | Adherents[],
+    statusCode: number
 }
 
 /**
@@ -17,49 +27,81 @@ export interface Adherents {
  * @param data 
  * @param success callback function
  */
-export default async function performRequest(url: string, type: string, req: string | Object): Promise<Adherents | Adherents[]> {
-    // ajoute l'adhérent à récupérer à l'URL
-    if (type == "GET" && req as string != "") {
-        url += req.toString();
-    }
-
+export default async function performRequest(url: string, type: string, req: string | BaseAdherent | Adherents): Promise<webRequest> {
     /**
      * HTTPS request
      */
 
     // GET -> SELECT
-
     if (type == "GET") {
-        var res: Adherents | Adherents[];
-        await $.getJSON(BASE_URL + url, (data: Adherents | Adherents[]) => {
-            // SELECT * (data est un vecteur)
-            if (data[0]) {
-                console.log(data[1].adresse);
+        // ajoute à l'URL l'adhérent à récupérer si besoin
+        if (req as string != "") {
+            url += req.toString();
+        }
+
+        await $.getJSON(BASE_URL + url, (data: Adherents | Adherents[], status, xhr) => {
+            res = {
+                adherents: data,
+                statusCode: xhr.status
             }
-            
-            else {
-                console.log((data as Adherents).adresse);
-            }
-            res = data;
         });
+        
         return res;
     }
 
-    // POST -> INSERT
-    else if (type == "POST") {
-        // somehow create the request from params & UrlAjaxSettings as a type? => read same url as ^
-        $.post()
+    // POST -> INSERT && PUT -> UPDATE
+    else if (type == "POST" || type == "PUT") {
+        var completeUrl = BASE_URL + url;
+
+        if (type == "PUT") {
+            var adherent: BaseAdherent = {
+                nom: (req as Adherents).nom,
+                prenom: (req as Adherents).prenom,
+                adresse: (req as Adherents).adresse,
+                email: (req as Adherents).email
+            }
+            completeUrl = BASE_URL + url + (req as Adherents)._id;
+            req = adherent; // écrase la requête initiale avec l'adhérent
+        }
+
+        var options: JQueryAjaxSettings = {
+            method: type,
+            url: completeUrl,
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(req),
+            traditional: true,
+            success: function (data, status, xhr) {
+                res = {
+                    adherents: data,
+                    statusCode: xhr.status
+                }
+            }
+        }
+
+        await $.ajax(options);
+
+        return res;
     }
 
-    // PUT/DELETE -> UPDATE/DELETE
-    else {
+    // DELETE
+    else if (type == "DELETE") {
+        var completeUrl = BASE_URL + url + req as string;
+
         var options: JQueryAjaxSettings = {
-            url: BASE_URL + url,
-            type: type,
-            success: () => {console.log("SUCCESS");}
+            method: "DELETE",
+            url: completeUrl,
+            traditional: true,
+            success: function (data, status, xhr) {
+                res = {
+                    adherents: null,
+                    statusCode: xhr.status
+                }
+            }
         };
 
-        $.ajax(options);
+        await $.ajax(options);
+
+        return res;
     }
 
     return null;

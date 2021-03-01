@@ -32,7 +32,6 @@ async function addAdherent(adherent: BaseAdherent) {
 }
 
 async function updateAdherent(_id: string | number, adherent: Adherent) {
-    console.log(_id);
     await coll.updateOne({ _id: _id }, {
         $set: {
             nom: adherent.nom,
