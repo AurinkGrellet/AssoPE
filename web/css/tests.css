@@ -2,15 +2,54 @@
     margin-top: 26px;
 }
 
-oj-module[role=main] button {
-    background-color: red !important;
+#textesCRUD {
+    margin-left: auto;
+    margin-top: 26px;
+    height: 390px;
+}
+
+#textesCRUD div {
+    margin-bottom: 0px;
+}
+
+#CRUDbuttons {
+    margin-left: auto;
+    margin-right: 88px;
+}
+
+#CRUDbuttons>oj-button {
+    margin: 2px;
+    margin-left: 290px;
+    margin-right: 18px;
+    background-color: grey !important;
+}
+
+#Recherche {
+    margin-top: 14px;
+    padding-left: 10px;
+}
+
+#inputTypeSearch {
+    width: 50%;
+    padding-right: 35px;
+}
+
+
+/* Classes */
+
+.hidden {
+    display: none;
+}
+
+.templ_critere {
+    margin-left: 12px;
 }
 
 .crud-grid-tests {
     height: 400px;
-    max-width: 500px;
+    width: 814px;
 }
 
-.crud-table-demo-hidden {
+.crud-table-hidden {
     display: none;
 }

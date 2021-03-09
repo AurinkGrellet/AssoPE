@@ -1,221 +1,404 @@
 /**
- * LE PROBLEME :
- * Pour chaque module, j'ai ajouté leur chemin au fichier path_mapping.json
- * Quand j'importe les modules mongodb et mysql, dès qu'ils sont chargés (donc dès que je clique sur l'onglet "test") la grille ne se charge pas et des erreurs apparaissent dans la console
- * Avec mongodb, l'erreur est : "lib/core" has not been loaded yet for context: _
- * Avec mysql (et typeorm), l'erreur est : "exports is not defined"
- * J'imagine que je dois mal importer ces modules, ou que la version visée de ECMAScript (de Typescript) n'est pas compatible avec "exports" et/ou "module.export"...
+ * Manque :
+ * -> Réussir à lier (knockout) test.ts à la DataGrid
+ * * Le bouton actuel SELECT déclenchera une fonction qui sera elle même également déclenchée automatiquement au "connected" de la page
+ * * Cliquer sur une ligne remplie du tableau affiche 2 autres(!) boutons (un peu en mode drawer si possible)
+ * (!)2 Boutons : UPDATE et DELETE
+ *
+ * A savoir que "transitionCompleted()" s'active une fois la nouvelle table chargée, ce qui pourrait avoir ses utilités
  */
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-define(["require", "exports", "../accUtils", "knockout", "ojs/ojconverterutils-i18n", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider", "ojs/ojcollectiondatagriddatasource"], function (require, exports, AccUtils, ko, ConverterUtils, ojmodel_1, CollectionDataProvider) {
+define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojinputnumber", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider"], function (require, exports, AccUtils, ko, ojmodel_1, CollectionDataProvider) {
     "use strict";
     /**
      * ViewModel Test
      */
     class TestViewModel {
         constructor() {
-            // initialisations
-            this.urldb = 'mongodb+srv://admin:kr0Z7h5upRAt9l57@assope.tab38.mongodb.net/assope?retryWrites=true&w=majority';
-            this.urljson = "js/views/adherentData.json";
-            this.grid = document.getElementById("datagrid");
+            // déclarations initiales
+            this.serviceURL = "http://localhost:7000/api/menu/adherents";
+            //grid: ojDataGrid<string, string>;
+            this.grid = ko.observable();
+            this.gridtimeoutfill = 150; // délai avant chargement des données
+            // initialisations Knockout
+            this.AdhCol = ko.observable();
             this.dataSource = ko.observable();
-            this.nextKey = 121;
-            //reset the fields to their original values
-            this.resetFields = function () {
-                this.inputEmployeeID(this.nextKey);
-                this.inputFirstName('Jane');
-                this.inputLastName('Doe');
-                this.inputHireDate(ConverterUtils.IntlConverterUtils.dateToLocalIso(new Date()));
-                this.inputSalary(15000);
-            }.bind(this);
-            //intialize the observable values in the forms
-            this.inputEmployeeID = ko.observable(this.nextKey);
-            this.inputFirstName = ko.observable('Jane');
-            this.inputLastName = ko.observable('Doe');
-            this.inputHireDate = ko.observable(ConverterUtils.IntlConverterUtils.dateToLocalIso(new Date()));
-            this.inputSalary = ko.observable(15000);
-            // [!]méthodes TODO
-            this.reset = () => { };
-            // getters
-            this.getCellClassName = function (cellContext) {
-                var key = cellContext['keys']['column'];
-                if (key === 'SALARY') {
-                    return 'oj-helper-justify-content-right';
+            this.inputID = ko.observable();
+            this.inputNom = ko.observable();
+            this.inputPrenom = ko.observable();
+            this.inputAdresse = ko.observable();
+            this.inputEmail = ko.observable();
+            this.inputTextSearchID = ko.observable();
+            this.inputTextSearchNom = ko.observable();
+            this.inputTextSearchPrenom = ko.observable();
+            this.inputTextSearchAdresse = ko.observable();
+            this.inputTextSearchEmail = ko.observable();
+            this.collSearchInputs = ko.observable();
+            /**
+             * Définit les noms d'attributs à utiliser pour les données reçues de l'API
+             * @param response objet à formater
+             * @returns objet formaté
+             */
+            this.parseAdh = (response) => {
+                if (response == undefined) {
+                    this.reset();
+                    return null;
                 }
-                return 'oj-helper-justify-content-flex-start';
+                return {
+                    ID: response["_id"],
+                    Nom: response["nom"],
+                    Prénom: response["prenom"],
+                    Adresse: response["adresse"],
+                    Email: response["email"]
+                };
             };
-            /* Mongoose */
-            /*
-            mongodb: MongoClient;
-            getDB = function () {
-                var connOpt: MongoClientOptions = { useNewUrlParser: true, useUnifiedTopology: true };
-                this.mongodb = async () => await new MongoClient('mongodb+srv://admin:kr0Z7h5upRAt9l57@assope.tab38.mongodb.net/assope?retryWrites=true&w=majority', connOpt);
-            }
-            */
-            this.currentDeptName = ko.observable("default");
-            this.newDeptId = ko.observable(555);
-            this.newDeptName = ko.observable("");
-            this.workingId = ko.observable("");
-            this.findDeptIds = () => {
-                let selectedIdsArray = [];
-                // ici retrouver la ligne sélectionnée
-                return selectedIdsArray;
+            /**
+             * Définit les noms d'attributs à utiliser pour les requêtes
+             * @param response objet à formater
+             * @returns objet formaté
+             */
+            this.parseSaveAdh = (response) => {
+                return {
+                    _id: response["_id"],
+                    nom: response["nom"],
+                    prenom: response["prenom"],
+                    adresse: response["adresse"],
+                    email: response["email"]
+                };
             };
-            this.remove = (event, data) => {
-                let deptIds = [];
-                deptIds = this.findDeptIds();
-                const collection = data.DeptCol();
-                deptIds.forEach((value) => {
-                    const model = collection.get(value);
-                    if (model) {
-                        collection.remove(model);
-                        model.destroy();
+            /**
+             * Modèle utilisé par l'application
+             */
+            this.Adherent = ojmodel_1.Model.extend({
+                parse: this.parseAdh,
+                parseSave: this.parseSaveAdh,
+                idAttribute: "_id",
+            });
+            this.myAdh = new this.Adherent();
+            /**
+             * Collection utilisée par l'application
+             */
+            this.AdhCollection = ojmodel_1.Collection.extend({
+                url: this.serviceURL,
+                model: this.myAdh,
+                comparator: "_id",
+            });
+            /**
+             * Crée un objet Adherent avec les attributs dans la vue
+             * @returns objet Adherent correspondant
+             */
+            this.buildModel = function (type) {
+                var id;
+                if (this.inputID() == null)
+                    id = this.nextId;
+                else
+                    id = this.inputID();
+                let model = {
+                    "_id": id,
+                    "prenom": this.inputPrenom(),
+                    "nom": this.inputNom(),
+                    "adresse": this.inputAdresse(),
+                    "email": this.inputEmail()
+                };
+                if (this.checkModel(model, type)) {
+                    return model;
+                }
+                else
+                    return null;
+            };
+            /**
+             * Affiche dans la vue les attributs de l'adhérent passé en paramètre
+             * @param model adhérent à afficher
+             */
+            this.updateFields = function (model) {
+                let attributes = model.attributes;
+                this.inputID(attributes['ID']);
+                this.inputPrenom(attributes['Prénom']);
+                this.inputNom(attributes['Nom']);
+                this.inputAdresse(attributes['Adresse']);
+                this.inputEmail(attributes['Email']);
+            }.bind(this);
+            /**
+             * Renvoie true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
+             * @param models collection des Adhérents
+             * @param id id à tester
+             */
+            this.checkIds = function (models, id) {
+                var dejaPresent = false;
+                models.forEach((model) => {
+                    if (model.attributes['ID'] === id) {
+                        dejaPresent = true;
                     }
                 });
-                document.getElementById("datagrid").refresh();
+                return !dejaPresent;
             };
-            this.showChangeNameDialog = (deptId, event, data) => {
-                const currName = data.DepartmentName;
-                this.workingId(deptId);
-                this.currentDeptName(currName);
-                document.getElementById("editDialog").open();
-            };
-            this.cancelDialog = () => {
-                document.getElementById("editDialog").close();
-                return true;
-            };
-            this.update = (event) => {
-                const currentId = this.workingId();
-                const myCollection = this.DeptCol();
-                const myModel = myCollection.get(currentId);
-                const newName = this.currentDeptName();
-                if (newName != myModel.get("DepartmentName") && newName != "") {
-                    myModel.save({
-                        DepartmentName: newName,
-                    }, {
-                        success: (myModel, response, options) => {
-                            document.getElementById("editDialog").close();
+            /**
+             * Événements
+             */
+            /**
+             * Crée et ajoute un nouvel adhérent à partir des valeurs récupérées dans la vue
+             */
+            this.ajout = function () {
+                let model = this.buildModel("ajout");
+                if (model != null) {
+                    this.resetDataSource();
+                    this.AdhCol().create(model, {
+                        wait: true,
+                        sort: true,
+                        contentType: "application/json",
+                        success: (model, response) => {
+                            this.nextId++;
+                            this.AdhCol().fetch({
+                                success: (collection) => {
+                                    let models = collection.models;
+                                    this.nextId = models[models.length - 1].attributes["ID"] + 1;
+                                    this.inputID(this.nextId);
+                                }
+                            });
                         },
                         error: (jqXHR, textStatus, errorThrown) => {
-                            alert("Update failed with: " + textStatus);
-                            document.getElementById("editDialog").close();
-                        },
+                            console.error("Erreur " + jqXHR.statusText + " dans la requête d'ajout : " + textStatus + "  " + errorThrown);
+                        }
                     });
                 }
-                else {
-                    alert("Department Name is not different or the new name is not valid");
-                    document.getElementById("editDialog").close();
+            }.bind(this);
+            /**
+             * Envoie une requête PUT pour mettre à jour l'adhérent sélectionné,
+             * en utilisant les valeurs récupérées dans la vue.
+             */
+            this.update = function () {
+                this.resetDataSource();
+                let collection = this.dataSource().collection;
+                if (this.inputID() != null) {
+                    // récupère le modèle correspondant à l'ID dans la vue
+                    let model = collection.models[this.grid().selection[0].startIndex.row];
+                    if (model) {
+                        model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "PUT" }; };
+                        let nouveauAdherent = this.buildModel("update");
+                        if (nouveauAdherent) {
+                            model.save({
+                                nom: nouveauAdherent.nom,
+                                prenom: nouveauAdherent.prenom,
+                                adresse: nouveauAdherent.adresse,
+                                email: nouveauAdherent.email
+                            }, {
+                                success: (modelBrut, response, options) => { },
+                                error: (modelBrut, error, options, xhr, textStatus) => {
+                                    alert("La mise à jour a échoué ; " + textStatus + " " + xhr.status);
+                                }
+                            });
+                        }
+                    }
                 }
+            }.bind(this);
+            /**
+             * Supprime l'adhérent sélectionné et met à jour nextId.
+             */
+            this.remove = function () {
+                document.getElementById("suppressionDialog").open();
             };
-            this.ajout = () => {
-                const recordAttrs = {
-                    DepartmentId: this.newDeptId(),
-                    DepartmentName: this.newDeptName(),
-                };
-                this.DeptCol().create(recordAttrs, {
-                    wait: true,
-                    contentType: "application/vnd.oracle.adf.resource+json",
-                    success: (model, response) => { },
-                    error: (jqXHR, textStatus, errorThrown) => { },
+            /**
+             * Rafraîchit les données et réinitialise les objets graphiques
+             */
+            this.reset = function () {
+                this.resetDataSource();
+                this.dataSource(this.collection);
+                this.AdhCol().fetch({
+                    success: (collection) => {
+                        let models = collection.models;
+                        this.nextId = models[models.length - 1].attributes["ID"] + 1;
+                        this.inputID(this.nextId);
+                        // après le fetch pour éviter que critereChange lance une série de GET
+                        this.inputTextSearchID(null);
+                        this.inputTextSearchNom('');
+                        this.inputTextSearchPrenom('');
+                        this.inputTextSearchAdresse('');
+                        this.inputTextSearchEmail('');
+                    }
                 });
-                // !!! add recordAttrs to database
-            };
-            this.DeptCol = ko.observable();
-            this.datasource = ko.observable();
-            this.parseSaveDept = (response) => {
-                return {
-                    DepartmentId: response["DepartmentId"],
-                    DepartmentName: response["DepartmentName"],
-                    LocationId: response["LocationId"],
-                    ManagerId: response["ManagerId"],
-                };
-            };
-            this.parseDept = (response) => {
-                return {
-                    DepartmentId: response["DepartmentId"],
-                    DepartmentName: response["DepartmentName"],
-                    LocationId: response["LocationId"],
-                    ManagerId: response["ManagerId"],
-                };
-            };
-            this.Department = ojmodel_1.Model.extend({
-                urlRoot: this.urljson,
-                parse: this.parseDept,
-                parseSave: this.parseSaveDept,
-                idAttribute: "DepartmentId",
-            });
-            this.myDept = new this.Department();
-            this.DeptCollection = ojmodel_1.Collection.extend({
-                url: this.urljson,
-                model: this.myDept,
-                comparator: "DepartmentId",
-            });
-            this.selectClick = (event) => __awaiter(this, void 0, void 0, function* () {
-            });
-            //this.getDB();
-            this.DeptCol(new this.DeptCollection());
-            this.dataSource(new CollectionDataProvider(this.DeptCol()));
+                this.inputPrenom('');
+                this.inputNom('');
+                this.inputAdresse('');
+                this.inputEmail('');
+            }.bind(this);
+            /**
+             * Événement sur les éléments oj-input-text pour les critères
+             * Met à jour la collection pour n'afficher que les modèles correspondant aux critères
+             */
+            this.critereChange = function (valeur) {
+                // récupère tous les modèles
+                let data = this.collection;
+                // filtre les modèles ne correspondant pas aux critères
+                let filtres = this.filtresActifs();
+                if (filtres.length > 0) {
+                    let modelsCumul = data.collection.models;
+                    for (let k = 0; k < filtres.length; k++) {
+                        if (filtres[k].valeur) {
+                            let critere = filtres[k].filtre;
+                            modelsCumul = (modelsCumul.filter((x) => {
+                                if (x.attributes[critere].toString().length >= filtres[k].valeur.toString().length) {
+                                    let found = x.attributes[critere].toString().search(filtres[k].valeur);
+                                    if (found != -1)
+                                        return true;
+                                }
+                                return false;
+                            }));
+                        }
+                    }
+                    let coll = new ojmodel_1.Collection(modelsCumul);
+                    this.AdhCol(coll);
+                    let datasource = new CollectionDataProvider(coll);
+                    this.dataSource(datasource);
+                }
+                else {
+                    this.dataSource(data);
+                }
+                let grid = this.grid();
+                if (grid.selection[0] && this.inputID()) {
+                    let data = this.dataSource();
+                    let index = data.collection.models.findIndex((x) => {
+                        if (x.attributes["ID"] == this.inputID())
+                            return true;
+                        else
+                            return false;
+                    });
+                    if (index > -1) {
+                        grid.selection[0].startIndex.row = index;
+                        grid.selection[0].endIndex.row = index;
+                    }
+                }
+            }.bind(this);
+            this.deleteAdh = function () {
+                let collection = this.dataSource();
+                if (this.inputID() != null) {
+                    // récupère le modèle depuis la grille
+                    let grid = this.grid();
+                    let index = grid.selection[0].startIndex.row;
+                    let model = collection.collection.models[index];
+                    if (model) {
+                        model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "DELETE" }; };
+                        model.fetch({
+                            success: () => { document.getElementById("suppressionDialog").close(); },
+                            error: (model, error, options, xhr, status) => {
+                                alert("La suppression a échoué : " + xhr.status);
+                                document.getElementById("suppressionDialog").close();
+                            }
+                        });
+                    }
+                }
+            }.bind(this);
+            this.AdhCol(new this.AdhCollection());
+            this.collection = new CollectionDataProvider(this.AdhCol());
+            // ajoute un délai avant l'ajout des données, nécessaire de refresh manuellement sinon
+            setTimeout(() => {
+                let x = this.collection.collection.models.length;
+                setTimeout(() => {
+                    this.dataSource(this.collection);
+                }, 50 + x);
+            }, this.gridtimeoutfill);
         }
-        /* Events from JET */
+        /**
+         * Vérifie si toutes les propriétés du modèle passé en paramètre sont conformes
+         * @param model modèle à tester
+         * @returns true si le modèle est conforme
+         */
+        checkModel(model, type) {
+            let OK = false;
+            if ((model.nom != ("" || undefined) && model.prenom != ("" || undefined) && model.adresse != ("" || undefined) && model.email != ("" || undefined))
+                && (this.checkIds(this.collection.collection.models, model._id) || type != "ajout")) {
+                OK = true;
+            }
+            return OK;
+        }
+        /**
+         * Retourne un vecteur contenant les filtres utilisés
+         */
+        filtresActifs() {
+            let filtres = [{ filtre: "ID", valeur: this.inputTextSearchID() }, { filtre: "Nom", valeur: this.inputTextSearchNom() },
+                { filtre: "Prénom", valeur: this.inputTextSearchPrenom() }, { filtre: "Adresse", valeur: this.inputTextSearchAdresse() },
+                { filtre: "Email", valeur: this.inputTextSearchEmail() }];
+            for (let k = filtres.length - 1; k >= 0; k--) {
+                if (filtres[k].valeur == "" || !filtres[k].valeur) {
+                    let index = filtres.indexOf(filtres[k]);
+                    if (index > -1) {
+                        filtres.splice(index, 1);
+                    }
+                }
+            }
+            ;
+            return filtres;
+        }
+        /**
+         * Réinitialise AdhCol à sa valeur par défaut si un filtre est actif
+         */
+        resetDataSource() {
+            if (this.AdhCol().models.length < this.collection.collection.models.length) {
+                this.AdhCol(new this.AdhCollection());
+            }
+        }
+        /**
+         * Envoie une requête GET à la base de données
+         */
+        fetchDataSource() {
+            this.resetDataSource();
+            this.AdhCol().fetch({
+                success: (collection) => {
+                    let models = collection.models;
+                    this.nextId = models[models.length - 1].attributes["ID"] + 1;
+                }
+            });
+        }
+        /**
+         * Referme l'objet ojDialog
+         */
+        cancelDialog() {
+            document.getElementById("suppressionDialog").close();
+            return true;
+        }
+        ;
+        /**
+         * Renvoie la largeur des colonnes à afficher.
+         * @param headerContext Contexte de l'entête.
+         */
+        getHeaderClassName(headerContext) {
+            var key = headerContext.key;
+            switch (key) {
+                case "ID": return 'width:74px';
+                case "Nom": return 'width:118px';
+                case "Prénom": return 'width:118px';
+                case "Adresse": return 'width:280px';
+                case "Email": return 'width:222px';
+            }
+            return "width:200px";
+        }
+        /**
+         * Événement JET qui se déclenche à chaque connexion.
+         */
         connected() {
             AccUtils.announce("Test page loaded.");
             document.title = "Test";
-            document.getElementById('datagrid').addEventListener('selectionChanged', function (event) {
+            this.grid(document.getElementById("datagrid"));
+            /**
+             * Événements de la vue
+             */
+            // Affiche les données de l'adhérent dans le texte à droite
+            this.grid().addEventListener('selectionChanged', function (event) {
                 //on selection change update fields with the selected model
-                var selection = event.detail['value'][0];
+                var selection = event.detail.value[0];
                 if (selection != null) {
-                    var rowKey = selection['startKey']['row'];
-                    this.modelToUpdate = this.collection.get(rowKey);
+                    var rowKey = selection.startIndex.row;
+                    this.modelToUpdate = this.dataSource().collection.models[rowKey];
                     this.updateFields(this.modelToUpdate);
                 }
             }.bind(this));
-            this.grid = document.getElementById("datagrid");
-            /**
-             * Call to API
-             */
-            /*
-            
-                    // GET test (changer "" par un nombre pour récupérer un adhérent précis)
-                    var resGet = callApi("/api/menu/adherents/", "GET", "");
-                    resGet.then((value) => {
-                        console.log(value.adherents[2].adresse);
-                        console.log(value.statusCode);
-                        // "value" contient le résultat de la requête
-                    });
-            
-                    // POST test
-                    var resPost = callApi("/api/menu/adherents/", "POST", {nom: "Dupont", prenom: "Richard", adresse: "238 Rue Kleber - 93000 Toulon", email: "richard.dupont@hotmail.com"});
-                    resPost.then((value) => {
-                        console.log(value.statusCode);
-                        // contient le nouvel adhérent + status
-                    });
-            
-                    // PUT test
-                    var resPut = callApi("/api/menu/adherents/", "PUT", {_id:"5", nom: "Dupont", prenom:"Richard", adresse:"237 Rue Kleber - 93000 Toulon", email:"richard.dupont@hotmail.com"});
-                    resPut.then((value) => {
-                        console.log(value.statusCode);
-                        // contient l'adhérent mis à jour + status
-                    });
-            
-                    // DELETE test
-                    var resDel = callApi("/api/menu/adherents/", "DELETE", "6");
-                    resDel.then((value) => {
-                        console.log(value.statusCode);
-                        // contient le status
-                    });
-            
-            */
         }
+        /**
+         * Événement JET qui se déclenche à chaque déconnexion.
+         */
         disconnected() {
         }
+        /**
+         * Événement JET qui se déclenche après la transition à la nouvelle vue.
+         */
         transitionCompleted() {
         }
     }

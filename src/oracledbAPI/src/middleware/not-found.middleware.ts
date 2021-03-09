@@ -1,6 +1,4 @@
 import { Request, Response, NextFunction } from "express"
-import { RepositoryNotTreeError } from "typeorm";
-
 export const notFoundHandler = (
     request: Request,
     response: Response,

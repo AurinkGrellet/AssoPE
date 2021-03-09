@@ -1,19 +1,6 @@
 /**
- * LE PROBLEME : 
- * Pour chaque module, j'ai ajouté leur chemin au fichier path_mapping.json
- * Quand j'importe les modules mongodb et mysql, dès qu'ils sont chargés (donc dès que je clique sur l'onglet "test") la grille ne se charge pas et des erreurs apparaissent dans la console
- * Avec mongodb, l'erreur est : "lib/core" has not been loaded yet for context: _
- * Avec mysql (et typeorm), l'erreur est : "exports is not defined"
- * J'imagine que je dois mal importer ces modules, ou que la version visée de ECMAScript (de Typescript) n'est pas compatible avec "exports" et/ou "module.export"...
- */
-
-
-/**
  * Manque :
- * -> Réussir à faire fonctionner l'importation
  * -> Réussir à lier (knockout) test.ts à la DataGrid
- * 
-  * 1 Connexion fonctionnelle à MongoDB (Web Component / ou, d'ailleurs, pas forcément -> utiliser path-mappings.json fonctionne si on met bien debug ET release)
  * * Le bouton actuel SELECT déclenchera une fonction qui sera elle même également déclenchée automatiquement au "connected" de la page
  * * Cliquer sur une ligne remplie du tableau affiche 2 autres(!) boutons (un peu en mode drawer si possible)
  * (!)2 Boutons : UPDATE et DELETE
@@ -23,266 +10,508 @@
 
 import * as AccUtils from "../accUtils";
 import * as ko from "knockout";
-import * as ConverterUtils from "ojs/ojconverterutils-i18n";
-import callApi from "../callApi";
+import * as KnockoutUtils from "ojs/ojknockout-model";
 import "ojs/ojknockout";
 import "ojs/ojinputtext";
+import "ojs/ojinputnumber";
 import "ojs/ojbutton";
 import "ojs/ojdatagrid";
 import "ojs/ojformlayout";
 import "ojs/ojdialog";
 import "ojs/ojcollectiondataprovider"
-import "ojs/ojcollectiondatagriddatasource";
 import { ojButton } from "ojs/ojbutton";
 import { ojDataGrid } from "ojs/ojdatagrid";
-import { ojButtonEventMap } from "ojs/ojbutton";
 import { Model, Collection } from "ojs/ojmodel";
 import CollectionDataProvider = require("ojs/ojcollectiondataprovider");
 import { ojDialog } from "ojs/ojdialog";
+import { ojInputText } from "ojs/ojinputtext";
 
+
+/**
+ * Interfaces
+ */
+interface BaseAdherent {
+    nom: string,
+    prenom: string,
+    email: string,
+    adresse: string
+}
+
+interface Adherent extends BaseAdherent {
+    _id: number
+}
+
+interface AdherentVue {
+    ID: number,
+    Nom: string,
+    Prénom: string,
+    Email: string,
+    Adresse: string
+}
+
+interface Filtre {
+    filtre: string | number,
+    valeur: string
+}
 
 /**
  * ViewModel Test
  */
 class TestViewModel {
-    // events
-    clickedButton: ko.Observable<string>; // boutons
+    // déclarations initiales
+    private readonly serviceURL: string = "http://localhost:7000/api/menu/adherents";
+    //grid: ojDataGrid<string, string>;
+    grid: ko.Observable = ko.observable();
+    collection: CollectionDataProvider<string, string>;
+    modelToUpdate: Model;
+    nextId: number;
+    gridtimeoutfill: number = 150; // délai avant chargement des données
 
-    // initialisations
-    urldb: string = 'mongodb+srv://admin:kr0Z7h5upRAt9l57@assope.tab38.mongodb.net/assope?retryWrites=true&w=majority';
-    urljson: string = "js/views/adherentData.json";
-    grid: ojDataGrid<number, string> = document.getElementById("datagrid") as ojDataGrid<number, string>;
+    // initialisations Knockout
+    private AdhCol: ko.Observable = ko.observable();
     dataSource: ko.Observable = ko.observable();
-    nextKey: number = 121;
+    inputID: ko.Observable = ko.observable();
+    inputNom: ko.Observable = ko.observable();
+    inputPrenom: ko.Observable = ko.observable();
+    inputAdresse: ko.Observable = ko.observable();
+    inputEmail: ko.Observable = ko.observable();
+    inputTextSearchID: ko.Observable = ko.observable();
+    inputTextSearchNom: ko.Observable = ko.observable();
+    inputTextSearchPrenom: ko.Observable = ko.observable();
+    inputTextSearchAdresse: ko.Observable = ko.observable();
+    inputTextSearchEmail: ko.Observable = ko.observable();
+    collSearchInputs: ko.Observable = ko.observable();
 
-    //reset the fields to their original values
-    resetFields = function () {
-        this.inputEmployeeID(this.nextKey);
-        this.inputFirstName('Jane');
-        this.inputLastName('Doe');
-        this.inputHireDate(ConverterUtils.IntlConverterUtils.dateToLocalIso(new Date()));
-        this.inputSalary(15000);
+    /**
+     * Définit les noms d'attributs à utiliser pour les données reçues de l'API
+     * @param response objet à formater
+     * @returns objet formaté
+     */
+    private parseAdh = (response: {
+        ID: number;
+        Nom: string;
+        Prénom: string;
+        Adresse: string;
+        Email: string;
+    }): AdherentVue => {
+        if (response == undefined) {
+            this.reset();
+            return null;
+        }
+        return {
+            ID: response["_id"],
+            Nom: response["nom"],
+            Prénom: response["prenom"],
+            Adresse: response["adresse"],
+            Email: response["email"]
+        };
+    };
+
+    /**
+     * Définit les noms d'attributs à utiliser pour les requêtes
+     * @param response objet à formater
+     * @returns objet formaté
+     */
+    private parseSaveAdh = (response: {
+        _id: number;
+        nom: string;
+        prenom: string;
+        adresse: string;
+        email: string;
+    }): Adherent => {
+        return {
+            _id: response["_id"],
+            nom: response["nom"],
+            prenom: response["prenom"],
+            adresse: response["adresse"],
+            email: response["email"]
+        };
+    };
+
+    /**
+     * Modèle utilisé par l'application
+     */
+    private Adherent = Model.extend({
+        parse: this.parseAdh,
+        parseSave: this.parseSaveAdh,
+        idAttribute: "_id",
+    });
+    private myAdh: Model = new this.Adherent();
+
+    /**
+     * Collection utilisée par l'application
+     */
+    private AdhCollection = Collection.extend({
+        url: this.serviceURL,
+        model: this.myAdh,
+        comparator: "_id",
+    });
+
+    /**
+     * Crée un objet Adherent avec les attributs dans la vue
+     * @returns objet Adherent correspondant
+     */
+    buildModel = function (type: string): Adherent {
+        var id: number;
+        if (this.inputID() == null) id = this.nextId;
+        else id = this.inputID();
+        let model: Adherent = {
+            "_id": id,
+            "prenom": this.inputPrenom(),
+            "nom": this.inputNom(),
+            "adresse": this.inputAdresse(),
+            "email": this.inputEmail()
+        }
+
+        if (this.checkModel(model, type)) {
+            return model;
+        }
+        else return null;
+    };
+
+    /**
+     * Affiche dans la vue les attributs de l'adhérent passé en paramètre
+     * @param model adhérent à afficher
+     */
+    updateFields = function (model: Model) {
+        let attributes: BaseAdherent = model.attributes as BaseAdherent;
+        this.inputID(attributes['ID'])
+        this.inputPrenom(attributes['Prénom']);
+        this.inputNom(attributes['Nom']);
+        this.inputAdresse(attributes['Adresse']);
+        this.inputEmail(attributes['Email']);
     }.bind(this);
 
-    //intialize the observable values in the forms
-    inputEmployeeID = ko.observable(this.nextKey);
-    inputFirstName = ko.observable('Jane');
-    inputLastName = ko.observable('Doe');
-    inputHireDate = ko.observable(ConverterUtils.IntlConverterUtils.dateToLocalIso(new Date()));
-    inputSalary = ko.observable(15000);
-
-    // [!]méthodes TODO
-    reset = () => { };
-
-    // getters
-    getCellClassName = function (cellContext: ojDataGrid.CellContext<string, string>) {
-        var key = cellContext['keys']['column'];
-        if (key === 'SALARY') {
-            return 'oj-helper-justify-content-right';
-        }
-        return 'oj-helper-justify-content-flex-start';
-    }
-
-    /* Mongoose */
-    /*
-    mongodb: MongoClient;
-    getDB = function () {
-        var connOpt: MongoClientOptions = { useNewUrlParser: true, useUnifiedTopology: true };
-        this.mongodb = async () => await new MongoClient('mongodb+srv://admin:kr0Z7h5upRAt9l57@assope.tab38.mongodb.net/assope?retryWrites=true&w=majority', connOpt);
-    }
-    */
-    currentDeptName: ko.Observable = ko.observable("default");
-    newDeptId: ko.Observable = ko.observable(555);
-    newDeptName: ko.Observable = ko.observable("");
-    private workingId: ko.Observable = ko.observable("");
-    private findDeptIds = () => {
-        let selectedIdsArray = [];
-        // ici retrouver la ligne sélectionnée
-
-        return selectedIdsArray;
-    };
-    remove = (event: ojButton.ojAction, data: TestViewModel) => {
-        let deptIds = [];
-        deptIds = this.findDeptIds();
-        const collection = data.DeptCol();
-        deptIds.forEach((value: number) => {
-            const model = collection.get(value);
-
-            if (model) {
-                collection.remove(model);
-                model.destroy();
+    /**
+     * Renvoie true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
+     * @param models collection des Adhérents
+     * @param id id à tester
+     */
+    checkIds = function (models: Model[], id: number): boolean {
+        var dejaPresent = false;
+        models.forEach((model: Model) => {
+            if (model.attributes['ID'] === id) {
+                dejaPresent = true;
             }
         });
-        (document.getElementById("datagrid") as ojDataGrid<number, string>).refresh();
-    };
-    showChangeNameDialog = (
-        deptId: number,
-        event: CustomEvent,
-        data: {
-            DepartmentId: number;
-            DepartmentName: string;
-            LocationId: number;
-            ManagerId: number;
-        }
-    ) => {
-        const currName = data.DepartmentName;
-        this.workingId(deptId);
-        this.currentDeptName(currName);
-        (document.getElementById("editDialog") as ojDialog).open();
-    };
-    cancelDialog = () => {
-        (document.getElementById("editDialog") as ojDialog).close();
-        return true;
-    };
-    update = (event: ojButton.ojAction) => {
-        const currentId = this.workingId();
-        const myCollection = this.DeptCol();
-        const myModel = myCollection.get(currentId);
-        const newName = this.currentDeptName();
-
-        if (newName != myModel.get("DepartmentName") && newName != "") {
-            myModel.save(
-                {
-                    DepartmentName: newName,
-                },
-                {
-                    success: (myModel, response, options) => {
-                        (document.getElementById("editDialog") as ojDialog).close();
-                    },
-                    error: (jqXHR, textStatus: string, errorThrown) => {
-                        alert("Update failed with: " + textStatus);
-                        (document.getElementById("editDialog") as ojDialog).close();
-                    },
-                }
-            );
-        } else {
-            alert("Department Name is not different or the new name is not valid");
-            (document.getElementById("editDialog") as ojDialog).close();
-        }
-    };
-    ajout = () => {
-        const recordAttrs = {
-            DepartmentId: this.newDeptId(),
-            DepartmentName: this.newDeptName(),
-        };
-        this.DeptCol().create(recordAttrs, {
-            wait: true,
-            contentType: "application/vnd.oracle.adf.resource+json",
-            success: (model, response) => { },
-            error: (jqXHR, textStatus, errorThrown) => { },
-        });
-
-        // !!! add recordAttrs to database
-    };
-
-    private DeptCol: ko.Observable = ko.observable();
-    datasource: ko.Observable = ko.observable();
-    private parseSaveDept = (response: {
-        DepartmentId: number;
-        DepartmentName: string;
-        LocationId: number;
-        ManagerId: number;
-    }) => {
-        return {
-            DepartmentId: response["DepartmentId"],
-            DepartmentName: response["DepartmentName"],
-            LocationId: response["LocationId"],
-            ManagerId: response["ManagerId"],
-        };
-    };
-    private parseDept = (response: {
-        DepartmentId: number;
-        DepartmentName: string;
-        LocationId: number;
-        ManagerId: number;
-    }) => {
-        return {
-            DepartmentId: response["DepartmentId"],
-            DepartmentName: response["DepartmentName"],
-            LocationId: response["LocationId"],
-            ManagerId: response["ManagerId"],
-        };
-    };
-    Department = Model.extend({
-        urlRoot: this.urljson,
-        parse: this.parseDept,
-        parseSave: this.parseSaveDept,
-        idAttribute: "DepartmentId",
-    });
-    private myDept = new this.Department();
-    private DeptCollection = Collection.extend({
-        url: this.urljson,
-        model: this.myDept,
-        comparator: "DepartmentId",
-    });
-
-    constructor() {
-        //this.getDB();
-        this.DeptCol(new this.DeptCollection());
-        this.dataSource(new CollectionDataProvider(this.DeptCol()));
+        return !dejaPresent;
     }
 
-    public selectClick = async (event: ojButtonEventMap["ojAction"]) => {
+    /**
+     * Vérifie si toutes les propriétés du modèle passé en paramètre sont conformes
+     * @param model modèle à tester
+     * @returns true si le modèle est conforme
+     */
+    checkModel(model: Adherent, type: string): boolean {
+        let OK: boolean = false;
+        if ((model.nom != ("" || undefined) && model.prenom != ("" || undefined) && model.adresse != ("" || undefined) && model.email != ("" || undefined))
+            && (this.checkIds((this.collection as any).collection.models, model._id) || type != "ajout")) {
+            OK = true;
+        }
 
+        return OK;
+    }
+
+
+    /**
+     * Événements
+     */
+
+    /**
+     * Crée et ajoute un nouvel adhérent à partir des valeurs récupérées dans la vue
+     */
+    ajout = function () {
+        let model: Adherent = this.buildModel("ajout");
+        if (model != null) {
+            this.resetDataSource();
+            (this.AdhCol() as Collection).create(model, {
+                wait: true,
+                sort: true,
+                contentType: "application/json",
+                success: (model, response) => {
+                    this.nextId++;
+                    (this.AdhCol() as Collection).fetch({
+                        success: (collection) => {
+                            let models = collection.models;
+                            this.nextId = (models[models.length - 1].attributes["ID"] as number) + 1;
+                            this.inputID(this.nextId);
+                        }
+                    });
+                },
+                error: (jqXHR: JQuery.jqXHR, textStatus: JQuery.Ajax.ErrorTextStatus, errorThrown) => {
+                    console.error("Erreur " + jqXHR.statusText + " dans la requête d'ajout : " + textStatus + "  " + errorThrown)
+                }
+            });
+        }
+    }.bind(this);
+
+
+    /**
+     * Envoie une requête PUT pour mettre à jour l'adhérent sélectionné, 
+     * en utilisant les valeurs récupérées dans la vue.
+     */
+    update = function () {
+        this.resetDataSource();
+        let collection: Collection = this.dataSource().collection;
+
+        if (this.inputID() != null) {
+            // récupère le modèle correspondant à l'ID dans la vue
+            let model = collection.models[this.grid().selection[0].startIndex.row];
+
+            if (model) {
+                model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "PUT" } };
+                let nouveauAdherent: Adherent = this.buildModel("update");
+                if (nouveauAdherent) {
+                    (model as Model).save(
+                        {
+                            nom: nouveauAdherent.nom,
+                            prenom: nouveauAdherent.prenom,
+                            adresse: nouveauAdherent.adresse,
+                            email: nouveauAdherent.email
+                        },
+                        {
+                            success: (modelBrut: Model, response, options) => { },
+                            error: (modelBrut, error, options, xhr: JQuery.jqXHR, textStatus: string) => {
+                                alert("La mise à jour a échoué ; " + textStatus + " " + xhr.status);
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }.bind(this);
+
+
+    /** 
+     * Supprime l'adhérent sélectionné et met à jour nextId.
+     */
+    remove = function () {
+        (document.getElementById("suppressionDialog") as ojDialog).open();
     };
 
-    /* Events from JET */
+
+    /**
+     * Rafraîchit les données et réinitialise les objets graphiques
+     */
+    reset = function () {
+        this.resetDataSource();
+        this.dataSource(this.collection);
+
+        (this.AdhCol() as Collection).fetch({
+            success: (collection) => {
+                let models = collection.models;
+                this.nextId = (models[models.length - 1].attributes["ID"] as number) + 1;
+                this.inputID(this.nextId);
+
+                // après le fetch pour éviter que critereChange lance une série de GET
+                this.inputTextSearchID(null);
+                this.inputTextSearchNom('');
+                this.inputTextSearchPrenom('');
+                this.inputTextSearchAdresse('');
+                this.inputTextSearchEmail('');
+            }
+        });
+
+        this.inputPrenom('');
+        this.inputNom('');
+        this.inputAdresse('');
+        this.inputEmail('');
+    }.bind(this);
+
+
+    /**
+     * Événement sur les éléments oj-input-text pour les critères
+     * Met à jour la collection pour n'afficher que les modèles correspondant aux critères
+     */
+    critereChange = function (valeur: string) {
+        // récupère tous les modèles
+        let data = this.collection;
+
+        // filtre les modèles ne correspondant pas aux critères
+        let filtres: Filtre[] = this.filtresActifs();
+        if (filtres.length > 0) {
+            let modelsCumul: Model[] = data.collection.models;
+            for (let k = 0; k < filtres.length; k++) {
+                if (filtres[k].valeur) {
+                    let critere = filtres[k].filtre;
+                    modelsCumul = (modelsCumul.filter((x: Model) => {
+                        if (x.attributes[critere].toString().length >= filtres[k].valeur.toString().length) {
+                            let found = (x.attributes as AdherentVue)[critere].toString().search(filtres[k].valeur);
+                            if (found != -1) return true;
+                        }
+                        return false;
+                    }));
+                }
+            }
+            let coll = new Collection(modelsCumul);
+            this.AdhCol(coll);
+            let datasource = new CollectionDataProvider<string, string>(coll);
+            this.dataSource(datasource);
+        }
+        else {
+            this.dataSource(data);
+        }
+
+        let grid = (this.grid() as ojDataGrid<string, string>);
+        if (grid.selection[0] && this.inputID()) {
+            let data = this.dataSource();
+            let index: number = (data.collection.models as Model[]).findIndex((x: Model) => {
+                if (x.attributes["ID"] == this.inputID()) return true;
+                else return false;
+            });
+
+            if (index > -1) {
+                grid.selection[0].startIndex.row = index;
+                grid.selection[0].endIndex.row = index;
+            }
+        }
+    }.bind(this);
+
+
+    /**
+     * Retourne un vecteur contenant les filtres utilisés
+     */
+    filtresActifs(): Filtre[] {
+        let filtres: Filtre[] = [{ filtre: "ID", valeur: this.inputTextSearchID() }, { filtre: "Nom", valeur: this.inputTextSearchNom() },
+        { filtre: "Prénom", valeur: this.inputTextSearchPrenom() }, { filtre: "Adresse", valeur: this.inputTextSearchAdresse() },
+        { filtre: "Email", valeur: this.inputTextSearchEmail() }];
+        for (let k = filtres.length - 1; k >= 0; k--) {
+            if (filtres[k].valeur == "" || !filtres[k].valeur) {
+                let index = filtres.indexOf(filtres[k]);
+                if (index > -1) {
+                    filtres.splice(index, 1);
+                }
+            }
+        };
+        return filtres;
+    }
+
+
+    /**
+     * Réinitialise AdhCol à sa valeur par défaut si un filtre est actif
+     */
+    resetDataSource() {
+        if (this.AdhCol().models.length < (this.collection as any).collection.models.length) {
+            this.AdhCol(new this.AdhCollection());
+        }
+    }
+
+
+    /**
+     * Envoie une requête GET à la base de données
+     */
+    fetchDataSource() {
+        this.resetDataSource();
+        (this.AdhCol() as Collection).fetch({
+            success: (collection) => {
+                let models = collection.models;
+                this.nextId = (models[models.length - 1].attributes["ID"] as number) + 1;
+            }
+        });
+    }
+
+
+    /**
+     * Referme l'objet ojDialog
+     */
+    cancelDialog() {
+        (document.getElementById("suppressionDialog") as ojDialog).close();
+        return true;
+    };
+
+
+    deleteAdh = function () {
+        let collection: any = this.dataSource();
+
+        if (this.inputID() != null) {
+            // récupère le modèle depuis la grille
+            let grid = (this.grid() as ojDataGrid<string, string>);
+            let index = grid.selection[0].startIndex.row;
+            let model = collection.collection.models[index];
+
+            if (model) {
+                model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "DELETE" } };
+                (model as Model).fetch(
+                    {
+                        success: () => { (document.getElementById("suppressionDialog") as ojDialog).close(); },
+                        error: (model, error, options, xhr: JQuery.jqXHR, status) => {
+                            alert("La suppression a échoué : " + xhr.status);
+                            (document.getElementById("suppressionDialog") as ojDialog).close();
+                        }
+                    }
+                )
+            }
+        }
+    }.bind(this);
+
+
+    /**
+     * Renvoie la largeur des colonnes à afficher. 
+     * @param headerContext Contexte de l'entête.
+     */
+    getHeaderClassName(headerContext: ojDataGrid.HeaderContext<string, string>) {
+        var key = headerContext.key;
+
+        switch (key) {
+            case "ID": return 'width:74px'
+            case "Nom": return 'width:118px'
+            case "Prénom": return 'width:118px'
+            case "Adresse": return 'width:280px'
+            case "Email": return 'width:222px'
+        }
+
+        return "width:200px";
+    }
+
+
+    constructor() {
+        this.AdhCol(new this.AdhCollection());
+        this.collection = new CollectionDataProvider(this.AdhCol());
+        // ajoute un délai avant l'ajout des données, nécessaire de refresh manuellement sinon
+        setTimeout(() => {
+            let x: number = (this.collection as any).collection.models.length;
+            setTimeout(() => {
+                this.dataSource(this.collection);
+            }, 50 + x);
+        }, this.gridtimeoutfill);
+    }
+
+
+
+    /**
+     * Événement JET qui se déclenche à chaque connexion.
+     */
     connected(): void {
         AccUtils.announce("Test page loaded.");
         document.title = "Test";
-        document.getElementById('datagrid').addEventListener('selectionChanged', function (event) {
+
+        this.grid(document.getElementById("datagrid") as ojDataGrid<string, string>);
+
+        /**
+         * Événements de la vue
+         */
+
+        // Affiche les données de l'adhérent dans le texte à droite
+        this.grid().addEventListener('selectionChanged', function (event) {
             //on selection change update fields with the selected model
-            var selection = event.detail['value'][0];
+            var selection = event.detail.value[0];
             if (selection != null) {
-                var rowKey = selection['startKey']['row'];
-                this.modelToUpdate = this.collection.get(rowKey);
+                var rowKey = selection.startIndex.row;
+                this.modelToUpdate = this.dataSource().collection.models[rowKey];
                 this.updateFields(this.modelToUpdate);
             }
         }.bind(this));
-        this.grid = document.getElementById("datagrid") as ojDataGrid<number, string>
-
-        
-        /**
-         * Call to API
-         */
-
-/*
-
-        // GET test (changer "" par un nombre pour récupérer un adhérent précis)
-        var resGet = callApi("/api/menu/adherents/", "GET", "");
-        resGet.then((value) => {
-            console.log(value.adherents[2].adresse);
-            console.log(value.statusCode);
-            // "value" contient le résultat de la requête
-        });
-
-        // POST test
-        var resPost = callApi("/api/menu/adherents/", "POST", {nom: "Dupont", prenom: "Richard", adresse: "238 Rue Kleber - 93000 Toulon", email: "richard.dupont@hotmail.com"});
-        resPost.then((value) => {
-            console.log(value.statusCode);
-            // contient le nouvel adhérent + status
-        });
-
-        // PUT test
-        var resPut = callApi("/api/menu/adherents/", "PUT", {_id:"5", nom: "Dupont", prenom:"Richard", adresse:"237 Rue Kleber - 93000 Toulon", email:"richard.dupont@hotmail.com"});
-        resPut.then((value) => {
-            console.log(value.statusCode);
-            // contient l'adhérent mis à jour + status
-        });
-
-        // DELETE test
-        var resDel = callApi("/api/menu/adherents/", "DELETE", "6");
-        resDel.then((value) => {
-            console.log(value.statusCode);
-            // contient le status
-        });
-
-*/
     }
 
+    /**
+     * Événement JET qui se déclenche à chaque déconnexion.
+     */
     disconnected(): void {
     }
 
+    /**
+     * Événement JET qui se déclenche après la transition à la nouvelle vue.
+     */
     transitionCompleted(): void {
     }
 }

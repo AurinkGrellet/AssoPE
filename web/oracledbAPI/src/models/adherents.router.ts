@@ -21,7 +21,8 @@
 // GET items
 
 adherentsRouter.get("/", async (req: Request, res: Response) => {
-    console.log("GET received");
+    console.log("GET reçu");
+
     try {
         const adherents: Adherent[] = await AdherentService.findAll();
 
@@ -35,7 +36,7 @@ adherentsRouter.get("/", async (req: Request, res: Response) => {
 // GET items/:id
 
 adherentsRouter.get("/:id", async (req: Request, res: Response) => {
-    console.log("GET received");
+    console.log("GET:id reçu");
     const id: number = parseInt(req.params.id, 10);
 
     try {
@@ -55,8 +56,9 @@ adherentsRouter.get("/:id", async (req: Request, res: Response) => {
 // POST items
 
 adherentsRouter.post("/", async (req: Request, res: Response) => {
+    console.log("POST reçu");
+
     try {
-        console.log(req.body);
         const adherent: BaseAdherent = req.body;
         
         const newAdherent = await AdherentService.create(adherent);
@@ -71,6 +73,7 @@ adherentsRouter.post("/", async (req: Request, res: Response) => {
 // PUT items/:id
 
 adherentsRouter.put("/:id", async (req: Request, res: Response) => {
+    console.log("PUT reçu");
     const id: number = parseInt(req.params.id, 10);
 
     try {
@@ -83,6 +86,7 @@ adherentsRouter.put("/:id", async (req: Request, res: Response) => {
             return res.status(200).json(updatedAdherent);
         }
 
+        // crée l'adhérent s'il n'existe pas
         const newAdherent = await AdherentService.create(adherentUpdate);
 
         res.status(201).json(newAdherent);
@@ -95,6 +99,7 @@ adherentsRouter.put("/:id", async (req: Request, res: Response) => {
 // DELETE items/:id
 
 adherentsRouter.delete("/:id", async (req: Request, res: Response) => {
+    console.log("DELETE reçu");
     try {
         const id: number = parseInt(req.params.id, 10);
         await AdherentService.remove(id);

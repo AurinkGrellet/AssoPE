@@ -6,42 +6,96 @@
 <link rel="stylesheet" href="../../css/tests.css" type="text/css" />
 
 <div class="oj-hybrid-padding">
-    <h1>Test area</h1>
+    <h1>Opérations CRUD</h1>
     <div id="ogms-test-intro">
-        My testing playground for visual elements.
+
     </div>
 
-    <div id="tests" class="oj-flex">
+    <div id="tests" class="oj-flex oj-lg-flex-wrap-nowrap">
         <div class="oj-sm-12 oj-flex-item oj-sm-padding-2x-horizontal">
             <div id="datagrid-wrapper" class="oj-flex">
-                <div class="oj-sm-12 oj-lg-6 oj-flex-item oj-sm-padding-2x-horizontal">
-                    <oj-data-grid id="datagrid" class="crud-grid-tests" aria-label="Data Grid CRUD Demo" data="[[dataSource]]" selection-mode.row="single" dnd.reorder.row="enable" header.column.style="width:100px" cell.class-name="[[getCellClassName]]">
+                <div class="oj-flex-item oj-sm-padding-2x-horizontal">
+                    <oj-data-grid id="datagrid" class="crud-grid-tests" aria-label="Data Grid CRUD Demo" data="[[dataSource]]" selection-mode.row="single" dnd.reorder.row="enable" header.column.style="[[getHeaderClassName]]" header.column.resizable.width="enable">
                     </oj-data-grid>
                 </div>
-                <oj-form-layout id="form-container" class="oj-sm-padding-2x-top oj-sm-padding-2x-start">
-                    <oj-input-text id="firstNameInput" value="{{inputFirstName}}" label-hint="First Name"></oj-input-text>
-                    <oj-input-text id="lastNameInput" value="{{inputLastName}}" label-hint="Last Name"></oj-input-text>
-                    <oj-input-text id="inputHireDate" value="{{inputHireDate}}" label-hint="Date Hired"></oj-input-text>
-                    <oj-input-text id="inputSalary" value="{{inputSalary}}" label-hint="Salary"></oj-input-text>
-                    <oj-label-value>
-                        <oj-button id="ajout_btn" class="oj-flex-item" on-oj-action="[[ajout]]">
-                            <span slot="startIcon" class="oj-ux-ico-action"></span> AJOUT
-                        </oj-button>
-                        <oj-button id="update_btn" class="oj-flex-item" on-oj-action="[[update]]">
-                            <span slot="startIcon" class="oj-ux-ico-information"></span> UPDATE
-                        </oj-button>
-                        <!--
-                <oj-input-text value="testD" label-hint="test textuel"></oj-input-text>
-            -->
-                        <oj-button id="remove_btn" class="oj-flex-item" on-oj-action="[[remove]]">
-                            <span slot="startIcon" class="oj-ux-ico-delete-circle"></span> DELETE
-                        </oj-button>
-                        <oj-button id="remove_btn" class="oj-flex-item" on-oj-action="[[reset]]">
-                            <span slot="startIcon" class="oj-ux-ico-back"></span> RESET (SELECT)
-                        </oj-button>
-                    </oj-label-value>
+                <oj-form-layout id="textesCRUD" class="oj-flex-item">
+                    <oj-input-number id="inputID" value="{{inputID}}" label-hint="ID" required="true"></oj-input-number>
+                    <oj-input-text id="inputNom" value="{{inputNom}}" label-hint="Nom" required="true"></oj-input-text>
+                    <oj-input-text id="inputPrenom" value="{{inputPrenom}}" label-hint="Prénom" required="true"></oj-input-text>
+                    <oj-input-text id="inputAdresse" value="{{inputAdresse}}" label-hint="Adresse" required="true"></oj-input-text>
+                    <oj-input-text id="inputEmail" value="{{inputEmail}}" label-hint="Email" required="true"></oj-input-text>
                 </oj-form-layout>
             </div>
+            <div id="interactionsCRUD" class="oj-flex-bar">
+                <div id="Recherche" class="oj-flex-item oj-flex-bar-start oj-lg-width-full oj-flex-bar oj-flex oj-lg-justify-content-space-between">
+                    <h3>Recherche par critères</h3>
+                    <oj-input-number id="inputSearchID" class="inputSearchClass" value="{{inputTextSearchID}}" on-value-changed="[[critereChange]]" label-hint="ID" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
+                        <oj-label for="inputSearchID"></oj-label>
+                    </oj-input-number>
+                    <oj-input-text id="inputSearchNom" class="inputSearchClass" value="{{inputTextSearchNom}}" on-value-changed="[[critereChange]]" label-hint="Nom" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
+                        <oj-label for="inputSearchNom"></oj-label>
+                    </oj-input-text>
+                    <oj-input-text id="inputSearchPrenom" class="inputSearchClass" value="{{inputTextSearchPrenom}}" on-value-changed="[[critereChange]]" label-hint="Prénom" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
+                        <oj-label for="inputSearchPrenom"></oj-label>
+                    </oj-input-text>
+                    <oj-input-text id="inputSearchAdresse" class="inputSearchClass" value="{{inputTextSearchAdresse}}" on-value-changed="[[critereChange]]" label-hint="Adresse" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
+                        <oj-label for="inputSearchAdresse"></oj-label>
+                    </oj-input-text>
+                    <oj-input-text id="inputSearchEmail" class="inputSearchClass" value="{{inputTextSearchEmail}}" on-value-changed="[[critereChange]]" label-hint="Email" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
+                        <oj-label for="inputSearchEmail"></oj-label>
+                    </oj-input-text>
+
+                    <!--
+                    <oj-button id="ajout-critere_btn" class="oj-lg-width-1" display="icons" chroming="borderless" on-oj-action="[[ajoutCritere]]">
+                        <span class="oj-ux-ico-plus-circle"></span>
+                    </oj-button>
+                    <div class="templ_critere oj-flex-bar oj-flex-item oj-width-full">
+                        <oj-bind-for-each data="[[collSearchInputs]]">
+                            <template>
+                                <div>
+                                <oj-input-number id="index" disabled="true" value="[[$current.index]]" class="hidden"></oj-input-number>
+                                <oj-label for="index"></oj-label>
+                        <oj-combobox-one id="inputTypeSearch" class="inputTypeClass oj-flex-item" options="{{dataForCombo}}" on-raw-value-changed="[[critereChange]]" label-hint="Critère" class="oj-flex-item oj-flex-bar-start">
+                            <oj-label for="inputTypeSearch"></oj-label></oj-combobox-one>
+                        <oj-input-text id="inputSearch" class="inputSearchClass" value="[[inputTextValue($current.index)]]" on-value-changed="[[critereChange]]" label-hint="Recherche" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
+                            <oj-label for="inputSearch"></oj-label>
+                        </oj-input-text>
+                        </div>
+                        </template>
+                        </oj-bind-for-each>
+                    </div>
+                -->
+                </div>
+                <div id="CRUDbuttons" class="oj-flex-item oj-lg-flex-direction-column oj-flex-bar-end">
+                    <oj-button id="ajout_btn" class="oj-flex-item" on-oj-action="[[ajout]]">
+                        <span slot="startIcon" class="oj-ux-ico-action"></span> Ajouter
+                    </oj-button>
+                    <oj-button id="update_btn" class="oj-flex-item" on-oj-action="[[update]]">
+                        <span slot="startIcon" class="oj-ux-ico-information"></span> Mettre à jour
+                    </oj-button>
+                    <oj-button id="remove_btn" class="oj-flex-item" on-oj-action="[[remove]]">
+                        <span slot="startIcon" class="oj-ux-ico-delete-circle"></span> Supprimer
+                    </oj-button>
+                    <oj-button id="remove_btn" class="oj-flex-item" on-oj-action="[[reset]]">
+                        <span slot="startIcon" class="oj-ux-ico-back"></span> Réinitialiser
+                    </oj-button>
+                </div>
+            </div>
         </div>
+
+        <oj-dialog id="suppressionDialog" class="crud-table-hidden" dialog-title="Suppression d'adhérent" drag-affordance="title-bar" modality="modeless" resize-behavior="none">
+            <div slot="header" class="oj-helper-clearfix" aria-labelledby="dialog-title-id">
+                <div>
+                    <span id="dialog-title-id" class="oj-dialog-title">Suppression d'adhérent</span>
+                </div>
+            </div>
+            <div slot="body">
+                <div class="oj-md-odd-cols-4 oj-lg-align-items-center">
+                    <oj-button id="submitBtn" on-oj-action="[[deleteAdh]]">Confirmer</oj-button>
+                    <oj-button id="cancelBtn" on-oj-action="[[cancelDialog]]">Annuler</oj-button>
+                </div>
+            </div>
+
     </div>
+    </oj-dialog>
 </div>

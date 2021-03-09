@@ -36,7 +36,7 @@ adherentsRouter.get("/", async (req: Request, res: Response) => {
 // GET items/:id
 
 adherentsRouter.get("/:id", async (req: Request, res: Response) => {
-    console.log("GET reçu");
+    console.log("GET:id reçu");
     const id: number = parseInt(req.params.id, 10);
 
     try {
