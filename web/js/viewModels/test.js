@@ -18,7 +18,6 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             this.serviceURL = "http://localhost:7000/api/menu/adherents";
             //grid: ojDataGrid<string, string>;
             this.grid = ko.observable();
-            this.gridtimeoutfill = 150; // délai avant chargement des données
             // initialisations Knockout
             this.AdhCol = ko.observable();
             this.dataSource = ko.observable();
@@ -232,7 +231,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 if (filtres.length > 0) {
                     let modelsCumul = data.collection.models;
                     for (let k = 0; k < filtres.length; k++) {
-                        if (filtres[k].valeur) {
+                        if (filtres[k].valeur || (filtres[k].filtre == "ID" && filtres[k].valeur == "0")) {
                             let critere = filtres[k].filtre;
                             modelsCumul = (modelsCumul.filter((x) => {
                                 if (x.attributes[critere].toString().length >= filtres[k].valeur.toString().length) {
@@ -288,13 +287,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             }.bind(this);
             this.AdhCol(new this.AdhCollection());
             this.collection = new CollectionDataProvider(this.AdhCol());
-            // ajoute un délai avant l'ajout des données, nécessaire de refresh manuellement sinon
-            setTimeout(() => {
-                let x = this.collection.collection.models.length;
-                setTimeout(() => {
-                    this.dataSource(this.collection);
-                }, 50 + x);
-            }, this.gridtimeoutfill);
+            this.dataSource(this.collection);
         }
         /**
          * Vérifie si toutes les propriétés du modèle passé en paramètre sont conformes
@@ -316,8 +309,19 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             let filtres = [{ filtre: "ID", valeur: this.inputTextSearchID() }, { filtre: "Nom", valeur: this.inputTextSearchNom() },
                 { filtre: "Prénom", valeur: this.inputTextSearchPrenom() }, { filtre: "Adresse", valeur: this.inputTextSearchAdresse() },
                 { filtre: "Email", valeur: this.inputTextSearchEmail() }];
+            // retire les espaces en début et fin de critères de recherche
+            console.info(filtres);
+            /*
+            this.inputTextSearchNom(filtres[1].valeur.trim());
+            this.inputTextSearchPrenom(filtres[2].valeur.trim());
+            this.inputTextSearchAdresse(filtres[3].valeur.trim());
+            this.inputTextSearchEmail(filtres[4].valeur.trim());
+            */
+            // boucle retirant les critères vides du vecteur
             for (let k = filtres.length - 1; k >= 0; k--) {
-                if (filtres[k].valeur == "" || !filtres[k].valeur) {
+                if ((filtres[k].valeur == "" || !filtres[k].valeur)
+                    && !(filtres[k].filtre == "ID" && filtres[k].valeur == 0)) {
+                    console.info(filtres[k]);
                     let index = filtres.indexOf(filtres[k]);
                     if (index > -1) {
                         filtres.splice(index, 1);

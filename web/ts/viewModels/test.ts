@@ -50,8 +50,8 @@ interface AdherentVue {
 }
 
 interface Filtre {
-    filtre: string | number,
-    valeur: string
+    filtre: string,
+    valeur: string | number
 }
 
 /**
@@ -65,7 +65,6 @@ class TestViewModel {
     collection: CollectionDataProvider<string, string>;
     modelToUpdate: Model;
     nextId: number;
-    gridtimeoutfill: number = 150; // délai avant chargement des données
 
     // initialisations Knockout
     private AdhCol: ko.Observable = ko.observable();
@@ -332,7 +331,7 @@ class TestViewModel {
         if (filtres.length > 0) {
             let modelsCumul: Model[] = data.collection.models;
             for (let k = 0; k < filtres.length; k++) {
-                if (filtres[k].valeur) {
+                if (filtres[k].valeur || (filtres[k].filtre == "ID" && filtres[k].valeur == "0")) {
                     let critere = filtres[k].filtre;
                     modelsCumul = (modelsCumul.filter((x: Model) => {
                         if (x.attributes[critere].toString().length >= filtres[k].valeur.toString().length) {
@@ -375,8 +374,21 @@ class TestViewModel {
         let filtres: Filtre[] = [{ filtre: "ID", valeur: this.inputTextSearchID() }, { filtre: "Nom", valeur: this.inputTextSearchNom() },
         { filtre: "Prénom", valeur: this.inputTextSearchPrenom() }, { filtre: "Adresse", valeur: this.inputTextSearchAdresse() },
         { filtre: "Email", valeur: this.inputTextSearchEmail() }];
+        
+        // retire les espaces en début et fin de critères de recherche
+        console.info(filtres);
+        /*
+        this.inputTextSearchNom(filtres[1].valeur.trim());
+        this.inputTextSearchPrenom(filtres[2].valeur.trim());
+        this.inputTextSearchAdresse(filtres[3].valeur.trim());
+        this.inputTextSearchEmail(filtres[4].valeur.trim());
+        */
+
+        // boucle retirant les critères vides du vecteur
         for (let k = filtres.length - 1; k >= 0; k--) {
-            if (filtres[k].valeur == "" || !filtres[k].valeur) {
+            if ((filtres[k].valeur == "" || !filtres[k].valeur)
+                && !(filtres[k].filtre == "ID" && filtres[k].valeur == 0)) {
+                console.info(filtres[k]);
                 let index = filtres.indexOf(filtres[k]);
                 if (index > -1) {
                     filtres.splice(index, 1);
@@ -467,13 +479,7 @@ class TestViewModel {
     constructor() {
         this.AdhCol(new this.AdhCollection());
         this.collection = new CollectionDataProvider(this.AdhCol());
-        // ajoute un délai avant l'ajout des données, nécessaire de refresh manuellement sinon
-        setTimeout(() => {
-            let x: number = (this.collection as any).collection.models.length;
-            setTimeout(() => {
-                this.dataSource(this.collection);
-            }, 50 + x);
-        }, this.gridtimeoutfill);
+        this.dataSource(this.collection);
     }
 
 

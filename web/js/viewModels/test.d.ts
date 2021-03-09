@@ -33,8 +33,8 @@ interface Adherent extends BaseAdherent {
     _id: number;
 }
 interface Filtre {
-    filtre: string | number;
-    valeur: string;
+    filtre: string;
+    valeur: string | number;
 }
 /**
  * ViewModel Test
@@ -45,7 +45,6 @@ declare class TestViewModel {
     collection: CollectionDataProvider<string, string>;
     modelToUpdate: Model;
     nextId: number;
-    gridtimeoutfill: number;
     private AdhCol;
     dataSource: ko.Observable;
     inputID: ko.Observable;
