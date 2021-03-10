@@ -1,5 +1,5 @@
 /**
- * Required External Modules and Interfaces
+ * Modules et Interfaces externes requis
  */
 
  import express, { Request, Response } from "express";

@@ -61,9 +61,7 @@ async function removeAdherent(adherent: Adherent) {
 }
 
 
-/**
- * Méthodes du Service
- */
+/** Méthodes du Service **/
 
  /**
   * Récupère tous les adhérents de la base

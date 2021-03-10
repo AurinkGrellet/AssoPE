@@ -1,9 +1,7 @@
 import mongoose from "mongoose";
 
-// remplacer _id par un autre "id", qui lui sera un nombre simple & choisi de façon incrémentale dans le frontend
-
 /**
- * Informations basiques d'un adhérent
+ * Informations de base d'un adhérent
  */
 export interface BaseAdherent {
     nom: string,
@@ -13,7 +11,7 @@ export interface BaseAdherent {
 }
 
 /**
- * Informations d'un adhérent
+ * Informations complètes d'un adhérent
  */
 export interface Adherent extends BaseAdherent {
     _id: number | string

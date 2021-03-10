@@ -1,11 +1,6 @@
 /**
- * Manque :
- * -> Réussir à lier (knockout) test.ts à la DataGrid
- * * Le bouton actuel SELECT déclenchera une fonction qui sera elle même également déclenchée automatiquement au "connected" de la page
- * * Cliquer sur une ligne remplie du tableau affiche 2 autres(!) boutons (un peu en mode drawer si possible)
- * (!)2 Boutons : UPDATE et DELETE
- *
- * A savoir que "transitionCompleted()" s'active une fois la nouvelle table chargée, ce qui pourrait avoir ses utilités
+ * @author Aurink GRELLET
+ * ViewModel de l'application simple de requêtes CRUD + Recherche
  */
 /// <reference types="ojcollectiondataprovider" />
 import * as ko from "knockout";
@@ -20,8 +15,9 @@ import "ojs/ojcollectiondataprovider";
 import { ojDataGrid } from "ojs/ojdatagrid";
 import { Model } from "ojs/ojmodel";
 import CollectionDataProvider = require("ojs/ojcollectiondataprovider");
+/** Interfaces **/
 /**
- * Interfaces
+ * Attributs de base d'un adhérent
  */
 interface BaseAdherent {
     nom: string;
@@ -29,21 +25,26 @@ interface BaseAdherent {
     email: string;
     adresse: string;
 }
+/**
+ * Attributs complets d'un adhérent
+ */
 interface Adherent extends BaseAdherent {
     _id: number;
 }
-interface Filtre {
-    filtre: string;
+/**
+ * Critère de recherche
+ */
+interface Critere {
+    critere: string;
     valeur: string | number;
 }
 /**
- * ViewModel Test
+ * ViewModel Requetes
  */
-declare class TestViewModel {
+declare class RequetesViewModel {
     private readonly serviceURL;
     grid: ko.Observable;
     collection: CollectionDataProvider<string, string>;
-    modelToUpdate: Model;
     nextId: number;
     private AdhCol;
     dataSource: ko.Observable;
@@ -59,62 +60,61 @@ declare class TestViewModel {
     inputTextSearchEmail: ko.Observable;
     collSearchInputs: ko.Observable;
     /**
-     * Définit les noms d'attributs à utiliser pour les données reçues de l'API
+     * Définit les attributs à utiliser pour afficher les données reçues de l'API
      * @param response objet à formater
      * @returns objet formaté
      */
     private parseAdh;
     /**
-     * Définit les noms d'attributs à utiliser pour les requêtes
+     * Définit les attributs à utiliser pour les requêtes
      * @param response objet à formater
      * @returns objet formaté
      */
     private parseSaveAdh;
     /**
-     * Modèle utilisé par l'application
+     * Modèle des adhérents
      */
     private Adherent;
     private myAdh;
     /**
-     * Collection utilisée par l'application
+     * Collection connectée à l'API
      */
     private AdhCollection;
     /**
-     * Crée un objet Adherent avec les attributs dans la vue
+     * Crée un objet Adherent avec les valeurs saisies dans la vue
      * @returns objet Adherent correspondant
      */
     buildModel: (type: string) => Adherent;
     /**
-     * Affiche dans la vue les attributs de l'adhérent passé en paramètre
+     * Affiche dans les saisies de texte les attributs de l'adhérent passé en paramètre
      * @param model adhérent à afficher
      */
     updateFields: any;
     /**
-     * Renvoie true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
+     * Recherche dans le vecteur de modèles l'id passé en paramètre
      * @param models collection des Adhérents
      * @param id id à tester
+     * @returns true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
      */
     checkIds: (models: Model[], id: number) => boolean;
     /**
      * Vérifie si toutes les propriétés du modèle passé en paramètre sont conformes
      * @param model modèle à tester
-     * @returns true si le modèle est conforme
+     * @returns true si le modèle est complet, false sinon
      */
     checkModel(model: Adherent, type: string): boolean;
+    /** Événements **/
     /**
-     * Événements
-     */
-    /**
-     * Crée et ajoute un nouvel adhérent à partir des valeurs récupérées dans la vue
+     * Crée et ajoute un nouvel adhérent à partir des valeurs saisies dans la vue
      */
     ajout: any;
     /**
      * Envoie une requête PUT pour mettre à jour l'adhérent sélectionné,
-     * en utilisant les valeurs récupérées dans la vue.
+     * en utilisant les valeurs saisies dans la vue
      */
     update: any;
     /**
-     * Supprime l'adhérent sélectionné et met à jour nextId.
+     * Ouvre une fenêtre de dialogue demandant confirmation pour la suppression de l'adhérent
      */
     remove: () => void;
     /**
@@ -122,44 +122,47 @@ declare class TestViewModel {
      */
     reset: any;
     /**
-     * Événement sur les éléments oj-input-text pour les critères
      * Met à jour la collection pour n'afficher que les modèles correspondant aux critères
      */
     critereChange: any;
     /**
-     * Retourne un vecteur contenant les filtres utilisés
+     * @returns vecteur des filtres utilisés
      */
-    filtresActifs(): Filtre[];
+    filtresActifs(): Critere[];
     /**
      * Réinitialise AdhCol à sa valeur par défaut si un filtre est actif
      */
     resetDataSource(): void;
     /**
-     * Envoie une requête GET à la base de données
+     * Met à jour collection et dataSource en envoyant une requête à l'API
+     * @param type
      */
     fetchDataSource(): void;
     /**
-     * Referme l'objet ojDialog
+     * Ferme la fenêtre de dialogue de suppression d'adhérent
      */
     cancelDialog(): boolean;
+    /**
+     * Supprime l'adhérent sélectionné, puis referme la fenêtre de dialogue
+     */
     deleteAdh: any;
     /**
-     * Renvoie la largeur des colonnes à afficher.
-     * @param headerContext Contexte de l'entête.
+     * Renvoie la largeur des colonnes à afficher
+     * @param headerContext Contexte de l'entête
      */
     getHeaderClassName(headerContext: ojDataGrid.HeaderContext<string, string>): "width:74px" | "width:118px" | "width:280px" | "width:222px" | "width:200px";
     constructor();
     /**
-     * Événement JET qui se déclenche à chaque connexion.
+     * Événement JET qui se déclenche à chaque connexion
      */
     connected(): void;
     /**
-     * Événement JET qui se déclenche à chaque déconnexion.
+     * Événement JET qui se déclenche à chaque déconnexion
      */
     disconnected(): void;
     /**
-     * Événement JET qui se déclenche après la transition à la nouvelle vue.
+     * Événement JET qui se déclenche après la transition à la nouvelle vue
      */
     transitionCompleted(): void;
 }
-export = TestViewModel;
+export = RequetesViewModel;

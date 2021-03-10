@@ -1,10 +1,14 @@
 import mongoose from "mongoose";
 import { checkConnDatabase } from "./checkConnection";
 
-export async function connectMongo(user: string, passw: string, database: string) {
 /**
- * Setting up the only connection
+ * Met en place l'unique connexion
+ * @param user 
+ * @param passw 
+ * @param database 
+ * @returns connexion à la base de données
  */
+export async function connectMongo(user: string, passw: string, database: string) {
 var conn: mongoose.Connection;
 if (mongoose.connection.readyState != 1) {
     conn = await checkConnDatabase(user, passw, database);

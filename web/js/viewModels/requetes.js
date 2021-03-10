@@ -1,18 +1,13 @@
 /**
- * Manque :
- * -> Réussir à lier (knockout) test.ts à la DataGrid
- * * Le bouton actuel SELECT déclenchera une fonction qui sera elle même également déclenchée automatiquement au "connected" de la page
- * * Cliquer sur une ligne remplie du tableau affiche 2 autres(!) boutons (un peu en mode drawer si possible)
- * (!)2 Boutons : UPDATE et DELETE
- *
- * A savoir que "transitionCompleted()" s'active une fois la nouvelle table chargée, ce qui pourrait avoir ses utilités
+ * @author Aurink GRELLET
+ * ViewModel de l'application simple de requêtes CRUD + Recherche
  */
 define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojcollectiondataprovider", "ojs/ojknockout", "ojs/ojinputtext", "ojs/ojinputnumber", "ojs/ojbutton", "ojs/ojdatagrid", "ojs/ojformlayout", "ojs/ojdialog", "ojs/ojcollectiondataprovider"], function (require, exports, AccUtils, ko, ojmodel_1, CollectionDataProvider) {
     "use strict";
     /**
-     * ViewModel Test
+     * ViewModel Requetes
      */
-    class TestViewModel {
+    class RequetesViewModel {
         constructor() {
             // déclarations initiales
             this.serviceURL = "http://localhost:7000/api/menu/adherents";
@@ -33,13 +28,12 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             this.inputTextSearchEmail = ko.observable();
             this.collSearchInputs = ko.observable();
             /**
-             * Définit les noms d'attributs à utiliser pour les données reçues de l'API
+             * Définit les attributs à utiliser pour afficher les données reçues de l'API
              * @param response objet à formater
              * @returns objet formaté
              */
             this.parseAdh = (response) => {
                 if (response == undefined) {
-                    this.reset();
                     return null;
                 }
                 return {
@@ -51,7 +45,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 };
             };
             /**
-             * Définit les noms d'attributs à utiliser pour les requêtes
+             * Définit les attributs à utiliser pour les requêtes
              * @param response objet à formater
              * @returns objet formaté
              */
@@ -65,7 +59,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 };
             };
             /**
-             * Modèle utilisé par l'application
+             * Modèle des adhérents
              */
             this.Adherent = ojmodel_1.Model.extend({
                 parse: this.parseAdh,
@@ -74,7 +68,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             });
             this.myAdh = new this.Adherent();
             /**
-             * Collection utilisée par l'application
+             * Collection connectée à l'API
              */
             this.AdhCollection = ojmodel_1.Collection.extend({
                 url: this.serviceURL,
@@ -82,7 +76,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 comparator: "_id",
             });
             /**
-             * Crée un objet Adherent avec les attributs dans la vue
+             * Crée un objet Adherent avec les valeurs saisies dans la vue
              * @returns objet Adherent correspondant
              */
             this.buildModel = function (type) {
@@ -105,7 +99,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                     return null;
             };
             /**
-             * Affiche dans la vue les attributs de l'adhérent passé en paramètre
+             * Affiche dans les saisies de texte les attributs de l'adhérent passé en paramètre
              * @param model adhérent à afficher
              */
             this.updateFields = function (model) {
@@ -117,9 +111,10 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 this.inputEmail(attributes['Email']);
             }.bind(this);
             /**
-             * Renvoie true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
+             * Recherche dans le vecteur de modèles l'id passé en paramètre
              * @param models collection des Adhérents
              * @param id id à tester
+             * @returns true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
              */
             this.checkIds = function (models, id) {
                 var dejaPresent = false;
@@ -130,11 +125,9 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 });
                 return !dejaPresent;
             };
+            /** Événements **/
             /**
-             * Événements
-             */
-            /**
-             * Crée et ajoute un nouvel adhérent à partir des valeurs récupérées dans la vue
+             * Crée et ajoute un nouvel adhérent à partir des valeurs saisies dans la vue
              */
             this.ajout = function () {
                 let model = this.buildModel("ajout");
@@ -151,6 +144,16 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                                     let models = collection.models;
                                     this.nextId = models[models.length - 1].attributes["ID"] + 1;
                                     this.inputID(this.nextId);
+                                    // réinitialise le DataSource si aucun filtre actif
+                                    if (this.filtresActifs().length == 0) {
+                                        this.fetchDataSource();
+                                    }
+                                    // reprend les adhérents actuellement affichés et filtre à nouveau sinon
+                                    else {
+                                        this.collection = new CollectionDataProvider(this.AdhCol());
+                                        if (this.filtresActifs().length > 0)
+                                            this.critereChange();
+                                    }
                                 }
                             });
                         },
@@ -162,18 +165,20 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             }.bind(this);
             /**
              * Envoie une requête PUT pour mettre à jour l'adhérent sélectionné,
-             * en utilisant les valeurs récupérées dans la vue.
+             * en utilisant les valeurs saisies dans la vue
              */
             this.update = function () {
                 this.resetDataSource();
                 let collection = this.dataSource().collection;
                 if (this.inputID() != null) {
-                    // récupère le modèle correspondant à l'ID dans la vue
+                    // récupère le modèle sélectionné
                     let model = collection.models[this.grid().selection[0].startIndex.row];
                     if (model) {
+                        // construction de la requête PUT
                         model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "PUT" }; };
                         let nouveauAdherent = this.buildModel("update");
                         if (nouveauAdherent) {
+                            // sauvegarde des nouvelles valeurs
                             model.save({
                                 nom: nouveauAdherent.nom,
                                 prenom: nouveauAdherent.prenom,
@@ -190,7 +195,7 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 }
             }.bind(this);
             /**
-             * Supprime l'adhérent sélectionné et met à jour nextId.
+             * Ouvre une fenêtre de dialogue demandant confirmation pour la suppression de l'adhérent
              */
             this.remove = function () {
                 document.getElementById("suppressionDialog").open();
@@ -220,7 +225,6 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 this.inputEmail('');
             }.bind(this);
             /**
-             * Événement sur les éléments oj-input-text pour les critères
              * Met à jour la collection pour n'afficher que les modèles correspondant aux critères
              */
             this.critereChange = function (valeur) {
@@ -231,8 +235,8 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                 if (filtres.length > 0) {
                     let modelsCumul = data.collection.models;
                     for (let k = 0; k < filtres.length; k++) {
-                        if (filtres[k].valeur || (filtres[k].filtre == "ID" && filtres[k].valeur == "0")) {
-                            let critere = filtres[k].filtre;
+                        if (filtres[k].valeur || (filtres[k].critere == "ID" && filtres[k].valeur == "0")) {
+                            let critere = filtres[k].critere;
                             modelsCumul = (modelsCumul.filter((x) => {
                                 if (x.attributes[critere].toString().length >= filtres[k].valeur.toString().length) {
                                     let found = x.attributes[critere].toString().search(filtres[k].valeur);
@@ -266,6 +270,9 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                     }
                 }
             }.bind(this);
+            /**
+             * Supprime l'adhérent sélectionné, puis referme la fenêtre de dialogue
+             */
             this.deleteAdh = function () {
                 let collection = this.dataSource();
                 if (this.inputID() != null) {
@@ -276,7 +283,13 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
                     if (model) {
                         model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "DELETE" }; };
                         model.fetch({
-                            success: () => { document.getElementById("suppressionDialog").close(); },
+                            success: () => {
+                                this.fetchDataSource();
+                                // sélectionne la première ligne par défaut
+                                this.grid().selection[0].startIndex.row = 0;
+                                this.grid().selection[0].endIndex.row = 0;
+                                document.getElementById("suppressionDialog").close();
+                            },
                             error: (model, error, options, xhr, status) => {
                                 alert("La suppression a échoué : " + xhr.status);
                                 document.getElementById("suppressionDialog").close();
@@ -288,11 +301,14 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             this.AdhCol(new this.AdhCollection());
             this.collection = new CollectionDataProvider(this.AdhCol());
             this.dataSource(this.collection);
+            setTimeout(() => {
+                this.grid().refresh();
+            }, 300);
         }
         /**
          * Vérifie si toutes les propriétés du modèle passé en paramètre sont conformes
          * @param model modèle à tester
-         * @returns true si le modèle est conforme
+         * @returns true si le modèle est complet, false sinon
          */
         checkModel(model, type) {
             let OK = false;
@@ -303,25 +319,16 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             return OK;
         }
         /**
-         * Retourne un vecteur contenant les filtres utilisés
+         * @returns vecteur des filtres utilisés
          */
         filtresActifs() {
-            let filtres = [{ filtre: "ID", valeur: this.inputTextSearchID() }, { filtre: "Nom", valeur: this.inputTextSearchNom() },
-                { filtre: "Prénom", valeur: this.inputTextSearchPrenom() }, { filtre: "Adresse", valeur: this.inputTextSearchAdresse() },
-                { filtre: "Email", valeur: this.inputTextSearchEmail() }];
-            // retire les espaces en début et fin de critères de recherche
-            console.info(filtres);
-            /*
-            this.inputTextSearchNom(filtres[1].valeur.trim());
-            this.inputTextSearchPrenom(filtres[2].valeur.trim());
-            this.inputTextSearchAdresse(filtres[3].valeur.trim());
-            this.inputTextSearchEmail(filtres[4].valeur.trim());
-            */
+            let filtres = [{ critere: "ID", valeur: this.inputTextSearchID() }, { critere: "Nom", valeur: this.inputTextSearchNom() },
+                { critere: "Prénom", valeur: this.inputTextSearchPrenom() }, { critere: "Adresse", valeur: this.inputTextSearchAdresse() },
+                { critere: "Email", valeur: this.inputTextSearchEmail() }];
             // boucle retirant les critères vides du vecteur
             for (let k = filtres.length - 1; k >= 0; k--) {
                 if ((filtres[k].valeur == "" || !filtres[k].valeur)
-                    && !(filtres[k].filtre == "ID" && filtres[k].valeur == 0)) {
-                    console.info(filtres[k]);
+                    && !(filtres[k].critere == "ID" && filtres[k].valeur == 0)) {
                     let index = filtres.indexOf(filtres[k]);
                     if (index > -1) {
                         filtres.splice(index, 1);
@@ -340,19 +347,24 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             }
         }
         /**
-         * Envoie une requête GET à la base de données
+         * Met à jour collection et dataSource en envoyant une requête à l'API
+         * @param type
          */
         fetchDataSource() {
-            this.resetDataSource();
-            this.AdhCol().fetch({
+            let coll = new this.AdhCollection();
+            coll.fetch({
                 success: (collection) => {
                     let models = collection.models;
                     this.nextId = models[models.length - 1].attributes["ID"] + 1;
+                    this.collection = new CollectionDataProvider(coll);
+                    this.dataSource(this.collection);
+                    if (this.filtresActifs().length > 0)
+                        this.critereChange();
                 }
             });
         }
         /**
-         * Referme l'objet ojDialog
+         * Ferme la fenêtre de dialogue de suppression d'adhérent
          */
         cancelDialog() {
             document.getElementById("suppressionDialog").close();
@@ -360,8 +372,8 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
         }
         ;
         /**
-         * Renvoie la largeur des colonnes à afficher.
-         * @param headerContext Contexte de l'entête.
+         * Renvoie la largeur des colonnes à afficher
+         * @param headerContext Contexte de l'entête
          */
         getHeaderClassName(headerContext) {
             var key = headerContext.key;
@@ -375,37 +387,37 @@ define(["require", "exports", "../accUtils", "knockout", "ojs/ojmodel", "ojs/ojc
             return "width:200px";
         }
         /**
-         * Événement JET qui se déclenche à chaque connexion.
+         * Événement JET qui se déclenche à chaque connexion
          */
         connected() {
-            AccUtils.announce("Test page loaded.");
-            document.title = "Test";
+            AccUtils.announce("Requetes page loaded.");
+            document.title = "Requêtes";
             this.grid(document.getElementById("datagrid"));
             /**
              * Événements de la vue
              */
             // Affiche les données de l'adhérent dans le texte à droite
             this.grid().addEventListener('selectionChanged', function (event) {
-                //on selection change update fields with the selected model
+                // met à jour les oj-input d'interaction CRUD en utilisant le modèle sélectionné
                 var selection = event.detail.value[0];
                 if (selection != null) {
                     var rowKey = selection.startIndex.row;
-                    this.modelToUpdate = this.dataSource().collection.models[rowKey];
-                    this.updateFields(this.modelToUpdate);
+                    let modelToUpdate = this.dataSource().collection.models[rowKey];
+                    this.updateFields(modelToUpdate);
                 }
             }.bind(this));
         }
         /**
-         * Événement JET qui se déclenche à chaque déconnexion.
+         * Événement JET qui se déclenche à chaque déconnexion
          */
         disconnected() {
         }
         /**
-         * Événement JET qui se déclenche après la transition à la nouvelle vue.
+         * Événement JET qui se déclenche après la transition à la nouvelle vue
          */
         transitionCompleted() {
         }
     }
-    return TestViewModel;
+    return RequetesViewModel;
 });
-//# sourceMappingURL=test.js.map
+//# sourceMappingURL=requetes.js.map

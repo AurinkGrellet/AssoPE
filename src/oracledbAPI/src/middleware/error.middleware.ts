@@ -1,6 +1,9 @@
 import HttpException from "../common/http-exception";
 import { Request, Response, NextFunction } from "express";
 
+/**
+ * Middleware gérant la réponse au client pour les erreurs génériques
+ */
 export const errorHandler = (
     error: HttpException,
     request: Request,

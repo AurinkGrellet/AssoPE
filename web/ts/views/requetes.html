@@ -44,27 +44,6 @@
                     <oj-input-text id="inputSearchEmail" class="inputSearchClass" value="{{inputTextSearchEmail}}" on-value-changed="[[critereChange]]" label-hint="Email" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
                         <oj-label for="inputSearchEmail"></oj-label>
                     </oj-input-text>
-
-                    <!--
-                    <oj-button id="ajout-critere_btn" class="oj-lg-width-1" display="icons" chroming="borderless" on-oj-action="[[ajoutCritere]]">
-                        <span class="oj-ux-ico-plus-circle"></span>
-                    </oj-button>
-                    <div class="templ_critere oj-flex-bar oj-flex-item oj-width-full">
-                        <oj-bind-for-each data="[[collSearchInputs]]">
-                            <template>
-                                <div>
-                                <oj-input-number id="index" disabled="true" value="[[$current.index]]" class="hidden"></oj-input-number>
-                                <oj-label for="index"></oj-label>
-                        <oj-combobox-one id="inputTypeSearch" class="inputTypeClass oj-flex-item" options="{{dataForCombo}}" on-raw-value-changed="[[critereChange]]" label-hint="Critère" class="oj-flex-item oj-flex-bar-start">
-                            <oj-label for="inputTypeSearch"></oj-label></oj-combobox-one>
-                        <oj-input-text id="inputSearch" class="inputSearchClass" value="[[inputTextValue($current.index)]]" on-value-changed="[[critereChange]]" label-hint="Recherche" class="oj-flex-item oj-lg-width-full oj-flex-bar-end">
-                            <oj-label for="inputSearch"></oj-label>
-                        </oj-input-text>
-                        </div>
-                        </template>
-                        </oj-bind-for-each>
-                    </div>
-                -->
                 </div>
                 <div id="CRUDbuttons" class="oj-flex-item oj-lg-flex-direction-column oj-flex-bar-end">
                     <oj-button id="ajout_btn" class="oj-flex-item" on-oj-action="[[ajout]]">

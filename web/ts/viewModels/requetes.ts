@@ -1,11 +1,6 @@
 /**
- * Manque :
- * -> Réussir à lier (knockout) test.ts à la DataGrid
- * * Le bouton actuel SELECT déclenchera une fonction qui sera elle même également déclenchée automatiquement au "connected" de la page
- * * Cliquer sur une ligne remplie du tableau affiche 2 autres(!) boutons (un peu en mode drawer si possible)
- * (!)2 Boutons : UPDATE et DELETE
- *
- * A savoir que "transitionCompleted()" s'active une fois la nouvelle table chargée, ce qui pourrait avoir ses utilités
+ * @author Aurink GRELLET
+ * ViewModel de l'application simple de requêtes CRUD + Recherche
  */
 
 import * as AccUtils from "../accUtils";
@@ -25,10 +20,14 @@ import { Model, Collection } from "ojs/ojmodel";
 import CollectionDataProvider = require("ojs/ojcollectiondataprovider");
 import { ojDialog } from "ojs/ojdialog";
 import { ojInputText } from "ojs/ojinputtext";
+import { GridFSBucket } from "mongodb";
+import { register } from "@oracle/oraclejet/dist/types/ojcomposite";
 
+
+/** Interfaces **/
 
 /**
- * Interfaces
+ * Attributs de base d'un adhérent
  */
 interface BaseAdherent {
     nom: string,
@@ -37,10 +36,16 @@ interface BaseAdherent {
     adresse: string
 }
 
+/**
+ * Attributs complets d'un adhérent
+ */
 interface Adherent extends BaseAdherent {
     _id: number
 }
 
+/**
+ * Attributs d'un adhérent tels qu'affichés dans la vue
+ */
 interface AdherentVue {
     ID: number,
     Nom: string,
@@ -49,21 +54,23 @@ interface AdherentVue {
     Adresse: string
 }
 
-interface Filtre {
-    filtre: string,
+/**
+ * Critère de recherche
+ */
+interface Critere {
+    critere: string,
     valeur: string | number
 }
 
 /**
- * ViewModel Test
+ * ViewModel Requetes
  */
-class TestViewModel {
+class RequetesViewModel {
     // déclarations initiales
     private readonly serviceURL: string = "http://localhost:7000/api/menu/adherents";
     //grid: ojDataGrid<string, string>;
     grid: ko.Observable = ko.observable();
-    collection: CollectionDataProvider<string, string>;
-    modelToUpdate: Model;
+    collection: CollectionDataProvider<string, string>; // collection d'adhérents complète
     nextId: number;
 
     // initialisations Knockout
@@ -82,7 +89,7 @@ class TestViewModel {
     collSearchInputs: ko.Observable = ko.observable();
 
     /**
-     * Définit les noms d'attributs à utiliser pour les données reçues de l'API
+     * Définit les attributs à utiliser pour afficher les données reçues de l'API
      * @param response objet à formater
      * @returns objet formaté
      */
@@ -94,7 +101,6 @@ class TestViewModel {
         Email: string;
     }): AdherentVue => {
         if (response == undefined) {
-            this.reset();
             return null;
         }
         return {
@@ -107,7 +113,7 @@ class TestViewModel {
     };
 
     /**
-     * Définit les noms d'attributs à utiliser pour les requêtes
+     * Définit les attributs à utiliser pour les requêtes
      * @param response objet à formater
      * @returns objet formaté
      */
@@ -128,7 +134,7 @@ class TestViewModel {
     };
 
     /**
-     * Modèle utilisé par l'application
+     * Modèle des adhérents
      */
     private Adherent = Model.extend({
         parse: this.parseAdh,
@@ -138,7 +144,7 @@ class TestViewModel {
     private myAdh: Model = new this.Adherent();
 
     /**
-     * Collection utilisée par l'application
+     * Collection connectée à l'API
      */
     private AdhCollection = Collection.extend({
         url: this.serviceURL,
@@ -147,7 +153,7 @@ class TestViewModel {
     });
 
     /**
-     * Crée un objet Adherent avec les attributs dans la vue
+     * Crée un objet Adherent avec les valeurs saisies dans la vue
      * @returns objet Adherent correspondant
      */
     buildModel = function (type: string): Adherent {
@@ -169,7 +175,7 @@ class TestViewModel {
     };
 
     /**
-     * Affiche dans la vue les attributs de l'adhérent passé en paramètre
+     * Affiche dans les saisies de texte les attributs de l'adhérent passé en paramètre
      * @param model adhérent à afficher
      */
     updateFields = function (model: Model) {
@@ -182,9 +188,10 @@ class TestViewModel {
     }.bind(this);
 
     /**
-     * Renvoie true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
+     * Recherche dans le vecteur de modèles l'id passé en paramètre
      * @param models collection des Adhérents
      * @param id id à tester
+     * @returns true si l'id fourni n'est pas déjà utilisé par un Model, false sinon
      */
     checkIds = function (models: Model[], id: number): boolean {
         var dejaPresent = false;
@@ -199,7 +206,7 @@ class TestViewModel {
     /**
      * Vérifie si toutes les propriétés du modèle passé en paramètre sont conformes
      * @param model modèle à tester
-     * @returns true si le modèle est conforme
+     * @returns true si le modèle est complet, false sinon
      */
     checkModel(model: Adherent, type: string): boolean {
         let OK: boolean = false;
@@ -212,12 +219,10 @@ class TestViewModel {
     }
 
 
-    /**
-     * Événements
-     */
+    /** Événements **/
 
     /**
-     * Crée et ajoute un nouvel adhérent à partir des valeurs récupérées dans la vue
+     * Crée et ajoute un nouvel adhérent à partir des valeurs saisies dans la vue
      */
     ajout = function () {
         let model: Adherent = this.buildModel("ajout");
@@ -234,6 +239,16 @@ class TestViewModel {
                             let models = collection.models;
                             this.nextId = (models[models.length - 1].attributes["ID"] as number) + 1;
                             this.inputID(this.nextId);
+
+                            // réinitialise le DataSource si aucun filtre actif
+                            if (this.filtresActifs().length == 0) {
+                                this.fetchDataSource();
+                            }
+                            // reprend les adhérents actuellement affichés et filtre à nouveau sinon
+                            else {
+                                this.collection = new CollectionDataProvider(this.AdhCol());
+                                if (this.filtresActifs().length > 0) this.critereChange();
+                            }
                         }
                     });
                 },
@@ -247,20 +262,22 @@ class TestViewModel {
 
     /**
      * Envoie une requête PUT pour mettre à jour l'adhérent sélectionné, 
-     * en utilisant les valeurs récupérées dans la vue.
+     * en utilisant les valeurs saisies dans la vue
      */
     update = function () {
         this.resetDataSource();
         let collection: Collection = this.dataSource().collection;
 
         if (this.inputID() != null) {
-            // récupère le modèle correspondant à l'ID dans la vue
+            // récupère le modèle sélectionné
             let model = collection.models[this.grid().selection[0].startIndex.row];
 
             if (model) {
+                // construction de la requête PUT
                 model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "PUT" } };
                 let nouveauAdherent: Adherent = this.buildModel("update");
                 if (nouveauAdherent) {
+                    // sauvegarde des nouvelles valeurs
                     (model as Model).save(
                         {
                             nom: nouveauAdherent.nom,
@@ -282,7 +299,7 @@ class TestViewModel {
 
 
     /** 
-     * Supprime l'adhérent sélectionné et met à jour nextId.
+     * Ouvre une fenêtre de dialogue demandant confirmation pour la suppression de l'adhérent
      */
     remove = function () {
         (document.getElementById("suppressionDialog") as ojDialog).open();
@@ -319,7 +336,6 @@ class TestViewModel {
 
 
     /**
-     * Événement sur les éléments oj-input-text pour les critères
      * Met à jour la collection pour n'afficher que les modèles correspondant aux critères
      */
     critereChange = function (valeur: string) {
@@ -327,12 +343,12 @@ class TestViewModel {
         let data = this.collection;
 
         // filtre les modèles ne correspondant pas aux critères
-        let filtres: Filtre[] = this.filtresActifs();
+        let filtres: Critere[] = this.filtresActifs();
         if (filtres.length > 0) {
             let modelsCumul: Model[] = data.collection.models;
             for (let k = 0; k < filtres.length; k++) {
-                if (filtres[k].valeur || (filtres[k].filtre == "ID" && filtres[k].valeur == "0")) {
-                    let critere = filtres[k].filtre;
+                if (filtres[k].valeur || (filtres[k].critere == "ID" && filtres[k].valeur == "0")) {
+                    let critere = filtres[k].critere;
                     modelsCumul = (modelsCumul.filter((x: Model) => {
                         if (x.attributes[critere].toString().length >= filtres[k].valeur.toString().length) {
                             let found = (x.attributes as AdherentVue)[critere].toString().search(filtres[k].valeur);
@@ -368,27 +384,17 @@ class TestViewModel {
 
 
     /**
-     * Retourne un vecteur contenant les filtres utilisés
+     * @returns vecteur des filtres utilisés
      */
-    filtresActifs(): Filtre[] {
-        let filtres: Filtre[] = [{ filtre: "ID", valeur: this.inputTextSearchID() }, { filtre: "Nom", valeur: this.inputTextSearchNom() },
-        { filtre: "Prénom", valeur: this.inputTextSearchPrenom() }, { filtre: "Adresse", valeur: this.inputTextSearchAdresse() },
-        { filtre: "Email", valeur: this.inputTextSearchEmail() }];
-        
-        // retire les espaces en début et fin de critères de recherche
-        console.info(filtres);
-        /*
-        this.inputTextSearchNom(filtres[1].valeur.trim());
-        this.inputTextSearchPrenom(filtres[2].valeur.trim());
-        this.inputTextSearchAdresse(filtres[3].valeur.trim());
-        this.inputTextSearchEmail(filtres[4].valeur.trim());
-        */
+    filtresActifs(): Critere[] {
+        let filtres: Critere[] = [{ critere: "ID", valeur: this.inputTextSearchID() }, { critere: "Nom", valeur: this.inputTextSearchNom() },
+        { critere: "Prénom", valeur: this.inputTextSearchPrenom() }, { critere: "Adresse", valeur: this.inputTextSearchAdresse() },
+        { critere: "Email", valeur: this.inputTextSearchEmail() }];
 
         // boucle retirant les critères vides du vecteur
         for (let k = filtres.length - 1; k >= 0; k--) {
             if ((filtres[k].valeur == "" || !filtres[k].valeur)
-                && !(filtres[k].filtre == "ID" && filtres[k].valeur == 0)) {
-                console.info(filtres[k]);
+                && !(filtres[k].critere == "ID" && filtres[k].valeur == 0)) {
                 let index = filtres.indexOf(filtres[k]);
                 if (index > -1) {
                     filtres.splice(index, 1);
@@ -410,21 +416,26 @@ class TestViewModel {
 
 
     /**
-     * Envoie une requête GET à la base de données
+     * Met à jour collection et dataSource en envoyant une requête à l'API
+     * @param type
      */
     fetchDataSource() {
-        this.resetDataSource();
-        (this.AdhCol() as Collection).fetch({
+        let coll = new this.AdhCollection();
+        coll.fetch({
             success: (collection) => {
                 let models = collection.models;
                 this.nextId = (models[models.length - 1].attributes["ID"] as number) + 1;
+                this.collection = new CollectionDataProvider(coll);
+                this.dataSource(this.collection);
+
+                if (this.filtresActifs().length > 0) this.critereChange();
             }
         });
     }
 
 
     /**
-     * Referme l'objet ojDialog
+     * Ferme la fenêtre de dialogue de suppression d'adhérent
      */
     cancelDialog() {
         (document.getElementById("suppressionDialog") as ojDialog).close();
@@ -432,6 +443,9 @@ class TestViewModel {
     };
 
 
+    /**
+     * Supprime l'adhérent sélectionné, puis referme la fenêtre de dialogue
+     */
     deleteAdh = function () {
         let collection: any = this.dataSource();
 
@@ -445,7 +459,15 @@ class TestViewModel {
                 model.customURL = (param0, param1, param2) => { return { url: this.serviceURL + "/" + model.attributes["ID"], type: "DELETE" } };
                 (model as Model).fetch(
                     {
-                        success: () => { (document.getElementById("suppressionDialog") as ojDialog).close(); },
+                        success: () => {
+                            this.fetchDataSource();
+
+                            // sélectionne la première ligne par défaut
+                            this.grid().selection[0].startIndex.row = 0;
+                            this.grid().selection[0].endIndex.row = 0;
+
+                            (document.getElementById("suppressionDialog") as ojDialog).close();
+                        },
                         error: (model, error, options, xhr: JQuery.jqXHR, status) => {
                             alert("La suppression a échoué : " + xhr.status);
                             (document.getElementById("suppressionDialog") as ojDialog).close();
@@ -458,8 +480,8 @@ class TestViewModel {
 
 
     /**
-     * Renvoie la largeur des colonnes à afficher. 
-     * @param headerContext Contexte de l'entête.
+     * Renvoie la largeur des colonnes à afficher
+     * @param headerContext Contexte de l'entête
      */
     getHeaderClassName(headerContext: ojDataGrid.HeaderContext<string, string>) {
         var key = headerContext.key;
@@ -480,16 +502,19 @@ class TestViewModel {
         this.AdhCol(new this.AdhCollection());
         this.collection = new CollectionDataProvider(this.AdhCol());
         this.dataSource(this.collection);
+        setTimeout(() => {
+            this.grid().refresh();
+        }, 300);
     }
 
 
 
     /**
-     * Événement JET qui se déclenche à chaque connexion.
+     * Événement JET qui se déclenche à chaque connexion
      */
     connected(): void {
-        AccUtils.announce("Test page loaded.");
-        document.title = "Test";
+        AccUtils.announce("Requetes page loaded.");
+        document.title = "Requêtes";
 
         this.grid(document.getElementById("datagrid") as ojDataGrid<string, string>);
 
@@ -499,27 +524,27 @@ class TestViewModel {
 
         // Affiche les données de l'adhérent dans le texte à droite
         this.grid().addEventListener('selectionChanged', function (event) {
-            //on selection change update fields with the selected model
+            // met à jour les oj-input d'interaction CRUD en utilisant le modèle sélectionné
             var selection = event.detail.value[0];
             if (selection != null) {
                 var rowKey = selection.startIndex.row;
-                this.modelToUpdate = this.dataSource().collection.models[rowKey];
-                this.updateFields(this.modelToUpdate);
+                let modelToUpdate: Model = this.dataSource().collection.models[rowKey];
+                this.updateFields(modelToUpdate);
             }
         }.bind(this));
     }
 
     /**
-     * Événement JET qui se déclenche à chaque déconnexion.
+     * Événement JET qui se déclenche à chaque déconnexion
      */
     disconnected(): void {
     }
 
     /**
-     * Événement JET qui se déclenche après la transition à la nouvelle vue.
+     * Événement JET qui se déclenche après la transition à la nouvelle vue
      */
     transitionCompleted(): void {
     }
 }
 
-export = TestViewModel;
+export = RequetesViewModel;

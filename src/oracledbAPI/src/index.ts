@@ -1,5 +1,5 @@
 /**
- * Required External Modules
+ * Modules externes requis
  */
 import * as dotenv from "dotenv";
 import express from "express";
@@ -13,7 +13,7 @@ import { notFoundHandler } from "./middleware/not-found.middleware";
 dotenv.config();
 
 /**
- * App Variables
+ * Variables globales
  */
 if (!process.env.PORT) {
     process.exit(1);
@@ -27,7 +27,7 @@ const DATABASE: string = process.env.DATABASE as string;
 const app = express();
 
 /**
- *  App Configuration
+ * Configuration
  */
 app.use(helmet());
 app.use(cors());
@@ -39,7 +39,7 @@ app.use(notFoundHandler); // catches all errors uncatched by the errorHandler
 
 
 /**
- * Server Activation
+ * Activation du serveur
  */
 app.listen(PORT, async () => {
     console.log(`Listening on port ${PORT}`);
