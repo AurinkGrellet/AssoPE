@@ -1,7 +1,4 @@
-# Awesome Project Build with TypeORM
+# Pour démarrer l'application
 
-Steps to run this project:
-
-1. Run `npm i` command
-2. Setup database settings inside `ormconfig.json` file
-3. Run `npm start` command
+1. Lancer l'API avec la commande 'npm run start' dans le dossier oracledbAPI
+2. Lancer l'application avec la commande 'ojet serve' dans le dossier racine du projet
